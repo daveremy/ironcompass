@@ -135,6 +135,20 @@ Valid workout types: `pickleball`, `strength`, `hike`, `golf`, `run`, `elliptica
 | created_at | timestamptz | Auto |
 | updated_at | timestamptz | Auto |
 
+### body_composition
+| Column | Type | Notes |
+|--------|------|-------|
+| date | date | PK, FK to daily_entries |
+| body_fat_pct | decimal(4,1) | From Hume Body Pod |
+| muscle_mass_lbs | decimal(5,1) | |
+| bone_mass_lbs | decimal(4,1) | |
+| body_water_pct | decimal(4,1) | |
+| visceral_fat | integer | 1-30 scale |
+| bmr | integer | Basal metabolic rate |
+| notes | text | |
+| created_at | timestamptz | Auto |
+| updated_at | timestamptz | Auto |
+
 ## CLI Commands
 
 ### Logging
@@ -149,6 +163,7 @@ ironcompass log workout --type hike --duration 56 --distance 2.5 --elevation 615
 ironcompass log meal --name "salmon dinner" --protein 34 --fat 12 --carbs 25 --calories 340
 ironcompass log pullups --total 18 --sets 3,3,3,3,3,3
 ironcompass log supplements --taken "vitamin-d,magnesium,omega-3,creatine"
+ironcompass log bodycomp --fat 22.3 --muscle 145 --bone 7.2 --water 55.1 --visceral 8 --bmr 1680
 ```
 
 ### Queries
@@ -177,6 +192,7 @@ All commands return structured JSON for Claude to parse.
 | `ironcompass_log_meal` | Log a meal | date, time, name, description, protein_g, fat_g, carbs_g, calories, notes |
 | `ironcompass_log_pullups` | Log pullup count | date, total_count, sets |
 | `ironcompass_log_supplements` | Log supplements | date, supplements |
+| `ironcompass_log_bodycomp` | Log body composition | date, body_fat_pct, muscle_mass_lbs, bone_mass_lbs, body_water_pct, visceral_fat, bmr, notes |
 | `ironcompass_query_today` | Today's summary | — |
 | `ironcompass_query_week` | Weekly summary | — |
 | `ironcompass_query_trend` | Trend data | metric, days |

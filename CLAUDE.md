@@ -54,6 +54,10 @@ Web Dashboard (read-only visualization)
 ### Supplements
 - date, supplements taken (array)
 
+### Body Composition
+- date, body_fat_pct, muscle_mass_lbs, bone_mass_lbs, body_water_pct, visceral_fat, bmr, notes
+- Source: Hume Body Pod (via Apple Health sync or manual entry)
+
 ## CLI Commands
 
 ```bash
@@ -77,6 +81,9 @@ ironcompass log pullups --total 18 --sets 3,3,3,3,3,3
 # Supplements
 ironcompass log supplements --taken "vitamin-d,magnesium,omega-3,creatine"
 
+# Body composition
+ironcompass log bodycomp --fat 22.3 --muscle 145 --bone 7.2 --water 55.1 --visceral 8 --bmr 1680
+
 # Queries
 ironcompass today                    # today's full summary
 ironcompass week                     # weekly summary
@@ -98,6 +105,7 @@ The MCP server exposes these as tools Claude can call directly:
 - `ironcompass_log_pullups` — log pullup count
 - `ironcompass_log_bp` — log blood pressure
 - `ironcompass_log_supplements` — log supplements taken
+- `ironcompass_log_bodycomp` — log body composition (Hume Body Pod)
 - `ironcompass_query_today` — get today's summary
 - `ironcompass_query_week` — get weekly summary
 - `ironcompass_query_trend` — get trend data for a metric
