@@ -43,11 +43,14 @@ The visual layer. Calendar view + metrics. Deploy to Vercel.
 
 | Issue | Task | Status |
 |---|---|---|
-| #12 | Calendar view component (month view, color-coded workouts) | todo |
+| #12 | Calendar view component (month view, color-coded workouts) | in progress |
 | #13 | Day detail view (meals, metrics, notes on click) | todo |
 | #14 | Metrics dashboard (weight trend, sleep, streaks, BP) | todo |
 | #15 | Weekly summary view | todo |
 | #16 | Deploy to Vercel | todo |
+
+### Design decision: multi-view navigation
+All dashboard views (monthly calendar, weekly, daily) share a single page with `?view=` query param routing (`?view=daily&date=2026-03-06`). This makes every view deep-linkable so the AI assistant can open specific views by constructing a URL. Shell nav tabs and CalendarDay onClick will drive these params starting in #13.
 
 ## Phase 4: Integrations — #17
 
