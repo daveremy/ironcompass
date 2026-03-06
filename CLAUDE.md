@@ -1,10 +1,10 @@
 # IronCompass — Project Config
 
 ## What This Is
-A personal health tracking and visualization platform. AI-first design — Claude Code is the primary client, not a human at a keyboard. Named for iron discipline (Ironman 2005), 360° health compass, and true north direction.
+A personal health tracking and visualization platform. AI-first design — Claude Code is the primary client, not a human at a keyboard. Named for iron discipline, 360° health compass, and true north direction.
 
-## Owner
-Dave Remy — 65, retired, active athlete (pickleball, hiking, strength, golf). Targeting 165 lbs, solid 4.5 pickleball, ready for 20-mile hikes anytime.
+## Design Intent
+Built for a single active individual tracking their own health. Single-user by design — no auth, no multi-tenancy. The user configures their own goals (target weight, fitness milestones, etc.) and IronCompass tracks progress toward them.
 
 ## Architecture
 
@@ -120,7 +120,7 @@ The MCP server exposes these as tools Claude can call directly:
 - Click day for full details (meals, metrics, notes)
 
 ### Metrics Dashboard
-- Weight trend line (goal line at 165)
+- Weight trend line (configurable goal line)
 - Sleep score trends
 - Fasting compliance streak
 - Alcohol-free streak
@@ -149,7 +149,7 @@ Athletic, bold, dark theme. Think Strava meets a fighter pilot's HUD. Not clinic
 For each feature/task:
 1. **Plan** — write up the approach in the issue
 2. **Review plan** — loop with `codex` and `gemini` CLIs until both approve
-3. **Implement** — after Dave's final go-ahead
+3. **Implement** — after user's final go-ahead
 4. **Simplify** — run code simplifier skill
 5. **Review implementation** — loop with `codex` and `gemini` CLIs until both approve
 6. **Polish** — tests, docs, final touches

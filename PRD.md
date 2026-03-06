@@ -2,7 +2,7 @@
 
 ## Vision
 
-IronCompass is a personal health tracking and visualization platform designed for Dave Remy — a 65-year-old retired athlete targeting 165 lbs, solid 4.5 pickleball, and ready-for-anything fitness. The system tracks weight, sleep, fasting, blood pressure, workouts, meals, pullups, and supplements through an AI-first interface.
+IronCompass is a personal health tracking and visualization platform designed for active individuals who want full control over their health data. Single-user by design, it tracks weight, sleep, fasting, blood pressure, workouts, meals, pullups, and supplements through an AI-first interface. Goals (target weight, fitness milestones) are fully configurable.
 
 **Design philosophy**: AI-friendly above all. Claude Code is the primary client. The web dashboard is a read-heavy visualization layer. The CLI and MCP server are the write-heavy input layers. Most data entry happens through natural conversation during daily LifeOS briefings.
 
@@ -17,18 +17,18 @@ IronCompass is a personal health tracking and visualization platform designed fo
 ## User Stories
 
 ### Daily Logging
-- As Dave, I tell Claude "I weighed 174.5 today, energy was a 3, no alcohol" and it logs via MCP
-- As Dave, I say "slept 7.2 hours, Apple score 78, Oura 85, mouth tape, no CPAP" and it logs
-- As Dave, I report "did a hike — 56 min, 2.5 miles, 615 ft elevation, 316 cal, avg HR 91" and it logs
-- As Dave, I describe meals conversationally and Claude extracts macros and logs them
-- As Dave, I say "18 pullups today, six sets of 3" and it logs
+- As a user, I tell Claude "I weighed in today, energy was a 3, no alcohol" and it logs via MCP
+- As a user, I say "slept 7.2 hours, Apple score 78, Oura 85, mouth tape, no CPAP" and it logs
+- As a user, I report "did a hike — 56 min, 2.5 miles, 615 ft elevation, 316 cal, avg HR 91" and it logs
+- As a user, I describe meals conversationally and Claude extracts macros and logs them
+- As a user, I say "18 pullups today, six sets of 3" and it logs
 
 ### Queries & Visualization
-- As Dave, I ask "how's my weight trending?" and get a 30-day summary with direction
-- As Dave, I ask "how'd I sleep this week?" and get averages and scores
-- As Dave, I view a calendar month on the dashboard with color-coded workout days
-- As Dave, I click a day to see everything: meals, metrics, workouts, notes
-- As Dave, I check my alcohol-free and fasting compliance streaks
+- As a user, I ask "how's my weight trending?" and get a 30-day summary with direction
+- As a user, I ask "how'd I sleep this week?" and get averages and scores
+- As a user, I view a calendar month on the dashboard with color-coded workout days
+- As a user, I click a day to see everything: meals, metrics, workouts, notes
+- As a user, I check my alcohol-free and fasting compliance streaks
 
 ### LifeOS Integration
 - During daily briefings, Claude calls `ironcompass_query_today` to surface health status
@@ -155,7 +155,7 @@ Valid workout types: `pickleball`, `strength`, `hike`, `golf`, `run`, `elliptica
 
 ```bash
 # Daily metrics
-ironcompass log --date 2026-03-05 --weight 174.5 --energy 3 --alcohol false
+ironcompass log --date 2026-03-05 --weight 175.0 --energy 3 --alcohol false
 ironcompass log sleep --apple 78 --oura 85 --hours 7.2 --mouth-tape --no-cpap
 ironcompass log fasting --protocol 16:8 --start 12:00 --end 20:00 --compliant
 ironcompass log bp --systolic 128 --diastolic 78
@@ -217,7 +217,7 @@ All commands return structured JSON for Claude to parse.
 - Notes
 
 ### Metrics Dashboard
-- Weight trend line with 165 lb goal line
+- Weight trend line with configurable goal line
 - Sleep score trends (Apple + Oura)
 - Fasting compliance streak
 - Alcohol-free streak
@@ -246,7 +246,7 @@ The `alcohol` column is nullable. `NULL` = not logged yet, `false` = confirmed n
 - **Availability**: Supabase handles uptime; Vercel for web
 - **Data integrity**: Foreign key constraints, CHECK constraints on enums
 - **Security**: Service role key server-side only, anon key for read-only dashboard
-- **Single user**: No auth system needed — this is Dave's personal tool
+- **Single user**: No auth needed — designed as a personal tool
 
 ## Architecture
 

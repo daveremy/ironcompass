@@ -2,7 +2,7 @@
 
 Personal health tracking and visualization platform. AI-first design — Claude Code is the primary client, not a human at a keyboard.
 
-Named for iron discipline (Ironman 2005), 360-degree health compass, and true north direction.
+Named for iron discipline, 360-degree health compass, and true north direction.
 
 ## Architecture
 
@@ -99,7 +99,7 @@ All commands return structured JSON.
 Dark theme, athletic aesthetic. Three main views:
 
 - **Calendar**: Month grid with color-coded workout days (green=pickleball, blue=strength, orange=hike, purple=golf, red=run). Click any day for full details.
-- **Metrics**: Weight trend (with 165 lb goal line), sleep scores, BP trend, streaks, pullup progress, protein intake.
+- **Metrics**: Weight trend (with configurable goal line), sleep scores, BP trend, streaks, pullup progress, protein intake.
 - **Weekly Summary**: Workouts completed vs planned, averages, deltas, streaks.
 
 ## Project Structure
@@ -136,6 +136,6 @@ npm run lint      # ESLint
 
 ## The Name
 
-**Iron** — iron discipline. Dave completed Ironman 2005. The iron will to show up every day.
+**Iron** — iron discipline. The iron will to show up every day and do the work.
 
 **Compass** — 360-degree view of health. Weight, sleep, nutrition, fitness, vitals — all pointing toward true north.

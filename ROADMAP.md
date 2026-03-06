@@ -6,7 +6,7 @@ For each feature/task:
 
 1. **Plan** — write up the approach
 2. **Review plan** — loop with Codex + Gemini CLIs until both approve
-3. **Implement** — after Dave's final go-ahead
+3. **Implement** — after user's final go-ahead
 4. **Simplify** — run code simplifier
 5. **Review implementation** — loop with Codex + Gemini until both approve
 6. **Polish** — tests, docs, final touches
