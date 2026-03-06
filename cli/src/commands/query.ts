@@ -1,15 +1,11 @@
 import { Command } from "commander";
 import { fail, success } from "../output.js";
-import { getSupabase } from "../db.js";
+import { getSupabase, throwIfError } from "../db.js";
 import { todayDate, daysAgo } from "../lib/date.js";
 import { parseNum } from "../lib/parse.js";
 import type { Database } from "../types/database.js";
 
 type TableName = keyof Database["public"]["Tables"];
-
-function throwIfError({ error }: { error: any }) {
-  if (error) throw new Error(`Supabase query failed: ${error.message}`);
-}
 
 // --- fetchDay ---
 

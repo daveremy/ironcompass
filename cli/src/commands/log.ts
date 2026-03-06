@@ -1,14 +1,62 @@
 import { Command, Option } from "commander";
 import { fail, success } from "../output.js";
-import { getSupabase } from "../db.js";
+import { upsertRow, insertRow } from "../db.js";
 import { ensureDailyEntry } from "../lib/ensure-daily-entry.js";
 import { parseNum, parseList, sparse } from "../lib/parse.js";
 import { todayDate } from "../lib/date.js";
 
-const WORKOUT_TYPES = [
+export const WORKOUT_TYPES = [
   "pickleball", "strength", "hike", "golf", "run",
   "elliptical", "mobility", "sauna", "hot_tub", "other",
 ] as const;
+
+type WorkoutType = typeof WORKOUT_TYPES[number];
+
+// --- Extracted core functions (used by both CLI and MCP) ---
+
+export async function logDaily(date: string, fields: { weight?: number; energy?: number; alcohol?: boolean; notes?: string }) {
+  return upsertRow("daily_entries", { date, ...sparse(fields) });
+}
+
+export async function logSleep(date: string, fields: { apple_score?: number; oura_score?: number; hours?: number; cpap?: boolean; mouth_tape?: boolean; oura_readiness?: number; avg_hr_sleep?: number; avg_hrv?: number; notes?: string }) {
+  await ensureDailyEntry(date);
+  return upsertRow("sleep", { date, ...sparse(fields) });
+}
+
+export async function logFasting(date: string, fields: { protocol?: string; window_start?: string; window_end?: string; compliant?: boolean }) {
+  await ensureDailyEntry(date);
+  return upsertRow("fasting", { date, ...sparse(fields) });
+}
+
+export async function logBp(date: string, systolic: number, diastolic: number, fields: { time?: string } = {}) {
+  await ensureDailyEntry(date);
+  return insertRow("blood_pressure", { date, systolic, diastolic, ...sparse(fields) });
+}
+
+export async function logWorkout(date: string, type: WorkoutType, fields: { duration_min?: number; distance_mi?: number; elevation_ft?: number; calories?: number; avg_hr?: number; notes?: string; planned?: boolean; completed?: boolean } = {}) {
+  await ensureDailyEntry(date);
+  return insertRow("workouts", { date, type, ...sparse(fields) });
+}
+
+export async function logMeal(date: string, name: string, fields: { time?: string; description?: string; protein_g?: number; fat_g?: number; carbs_g?: number; calories?: number; notes?: string } = {}) {
+  await ensureDailyEntry(date);
+  return insertRow("meals", { date, name, ...sparse(fields) });
+}
+
+export async function logPullups(date: string, total_count: number, fields: { sets?: number[] } = {}) {
+  await ensureDailyEntry(date);
+  return upsertRow("pullups", { date, total_count, ...sparse(fields) });
+}
+
+export async function logSupplements(date: string, supplements: string[]) {
+  await ensureDailyEntry(date);
+  return upsertRow("supplements", { date, supplements });
+}
+
+export async function logBodycomp(date: string, fields: { body_fat_pct?: number; muscle_mass_lbs?: number; bone_mass_lbs?: number; body_water_pct?: number; visceral_fat?: number; bmr?: number; notes?: string } = {}) {
+  await ensureDailyEntry(date);
+  return upsertRow("body_composition", { date, ...sparse(fields) });
+}
 
 export function registerLogCommands(program: Command): void {
   const today = todayDate();
@@ -28,23 +76,13 @@ export function registerLogCommands(program: Command): void {
     .option("--notes <text>", "Notes")
     .action(async (opts) => {
       try {
-        const date = opts.date as string;
-        const payload = {
-          date,
-          ...sparse({
-            weight: parseNum("weight", opts.weight),
-            energy: parseNum("energy", opts.energy),
-            alcohol: opts.alcohol as boolean | undefined,
-            notes: opts.notes as string | undefined,
-          }),
-        };
-        const { data, error } = await getSupabase()
-          .from("daily_entries")
-          .upsert(payload, { onConflict: "date" })
-          .select()
-          .single();
-        if (error) fail(`Failed to log daily: ${error.message}`);
-        success(data);
+        const result = await logDaily(opts.date as string, {
+          weight: parseNum("weight", opts.weight),
+          energy: parseNum("energy", opts.energy),
+          alcohol: opts.alcohol as boolean | undefined,
+          notes: opts.notes as string | undefined,
+        });
+        success(result);
       } catch (e: any) { fail(e.message ?? String(e)); }
     });
 
@@ -66,29 +104,18 @@ export function registerLogCommands(program: Command): void {
     .option("--notes <text>", "Notes")
     .action(async (opts) => {
       try {
-        const date = opts.date as string;
-        const payload = {
-          date,
-          ...sparse({
-            apple_score: parseNum("apple", opts.apple),
-            oura_score: parseNum("oura", opts.oura),
-            hours: parseNum("hours", opts.hours),
-            cpap: opts.cpap as boolean | undefined,
-            mouth_tape: opts.mouthTape as boolean | undefined,
-            oura_readiness: parseNum("readiness", opts.readiness),
-            avg_hr_sleep: parseNum("avg-hr-sleep", opts.avgHrSleep),
-            avg_hrv: parseNum("hrv", opts.hrv),
-            notes: opts.notes as string | undefined,
-          }),
-        };
-        await ensureDailyEntry(date);
-        const { data, error } = await getSupabase()
-          .from("sleep")
-          .upsert(payload, { onConflict: "date" })
-          .select()
-          .single();
-        if (error) fail(`Failed to log sleep: ${error.message}`);
-        success(data);
+        const result = await logSleep(opts.date as string, {
+          apple_score: parseNum("apple", opts.apple),
+          oura_score: parseNum("oura", opts.oura),
+          hours: parseNum("hours", opts.hours),
+          cpap: opts.cpap as boolean | undefined,
+          mouth_tape: opts.mouthTape as boolean | undefined,
+          oura_readiness: parseNum("readiness", opts.readiness),
+          avg_hr_sleep: parseNum("avg-hr-sleep", opts.avgHrSleep),
+          avg_hrv: parseNum("hrv", opts.hrv),
+          notes: opts.notes as string | undefined,
+        });
+        success(result);
       } catch (e: any) { fail(e.message ?? String(e)); }
     });
 
@@ -104,24 +131,13 @@ export function registerLogCommands(program: Command): void {
     .option("--no-compliant", "Did not comply")
     .action(async (opts) => {
       try {
-        const date = opts.date as string;
-        const payload = {
-          date,
-          ...sparse({
-            protocol: opts.protocol as string | undefined,
-            window_start: opts.start as string | undefined,
-            window_end: opts.end as string | undefined,
-            compliant: opts.compliant as boolean | undefined,
-          }),
-        };
-        await ensureDailyEntry(date);
-        const { data, error } = await getSupabase()
-          .from("fasting")
-          .upsert(payload, { onConflict: "date" })
-          .select()
-          .single();
-        if (error) fail(`Failed to log fasting: ${error.message}`);
-        success(data);
+        const result = await logFasting(opts.date as string, {
+          protocol: opts.protocol as string | undefined,
+          window_start: opts.start as string | undefined,
+          window_end: opts.end as string | undefined,
+          compliant: opts.compliant as boolean | undefined,
+        });
+        success(result);
       } catch (e: any) { fail(e.message ?? String(e)); }
     });
 
@@ -135,25 +151,10 @@ export function registerLogCommands(program: Command): void {
     .option("--time <time>", "Time of reading (HH:MM)")
     .action(async (opts) => {
       try {
-        const date = opts.date as string;
-        const systolic = parseNum("systolic", opts.systolic)!;
-        const diastolic = parseNum("diastolic", opts.diastolic)!;
-        const payload = {
-          date,
-          systolic,
-          diastolic,
-          ...sparse({
-            time: opts.time as string | undefined,
-          }),
-        };
-        await ensureDailyEntry(date);
-        const { data, error } = await getSupabase()
-          .from("blood_pressure")
-          .insert(payload)
-          .select()
-          .single();
-        if (error) fail(`Failed to log bp: ${error.message}`);
-        success(data);
+        const result = await logBp(opts.date as string, parseNum("systolic", opts.systolic)!, parseNum("diastolic", opts.diastolic)!, {
+          time: opts.time as string | undefined,
+        });
+        success(result);
       } catch (e: any) { fail(e.message ?? String(e)); }
     });
 
@@ -175,29 +176,17 @@ export function registerLogCommands(program: Command): void {
     .option("--no-completed", "Was not completed")
     .action(async (opts) => {
       try {
-        const date = opts.date as string;
-        const payload = {
-          date,
-          type: opts.type as string,
-          ...sparse({
-            duration_min: parseNum("duration", opts.duration),
-            distance_mi: parseNum("distance", opts.distance),
-            elevation_ft: parseNum("elevation", opts.elevation),
-            calories: parseNum("calories", opts.calories),
-            avg_hr: parseNum("hr", opts.hr),
-            notes: opts.notes as string | undefined,
-            planned: opts.planned as boolean | undefined,
-            completed: opts.completed as boolean | undefined,
-          }),
-        };
-        await ensureDailyEntry(date);
-        const { data, error } = await getSupabase()
-          .from("workouts")
-          .insert(payload)
-          .select()
-          .single();
-        if (error) fail(`Failed to log workout: ${error.message}`);
-        success(data);
+        const result = await logWorkout(opts.date as string, opts.type as WorkoutType, {
+          duration_min: parseNum("duration", opts.duration),
+          distance_mi: parseNum("distance", opts.distance),
+          elevation_ft: parseNum("elevation", opts.elevation),
+          calories: parseNum("calories", opts.calories),
+          avg_hr: parseNum("hr", opts.hr),
+          notes: opts.notes as string | undefined,
+          planned: opts.planned as boolean | undefined,
+          completed: opts.completed as boolean | undefined,
+        });
+        success(result);
       } catch (e: any) { fail(e.message ?? String(e)); }
     });
 
@@ -216,28 +205,16 @@ export function registerLogCommands(program: Command): void {
     .option("--notes <text>", "Notes")
     .action(async (opts) => {
       try {
-        const date = opts.date as string;
-        const payload = {
-          date,
-          name: opts.name as string,
-          ...sparse({
-            time: opts.time as string | undefined,
-            description: opts.description as string | undefined,
-            protein_g: parseNum("protein", opts.protein),
-            fat_g: parseNum("fat", opts.fat),
-            carbs_g: parseNum("carbs", opts.carbs),
-            calories: parseNum("calories", opts.calories),
-            notes: opts.notes as string | undefined,
-          }),
-        };
-        await ensureDailyEntry(date);
-        const { data, error } = await getSupabase()
-          .from("meals")
-          .insert(payload)
-          .select()
-          .single();
-        if (error) fail(`Failed to log meal: ${error.message}`);
-        success(data);
+        const result = await logMeal(opts.date as string, opts.name as string, {
+          time: opts.time as string | undefined,
+          description: opts.description as string | undefined,
+          protein_g: parseNum("protein", opts.protein),
+          fat_g: parseNum("fat", opts.fat),
+          carbs_g: parseNum("carbs", opts.carbs),
+          calories: parseNum("calories", opts.calories),
+          notes: opts.notes as string | undefined,
+        });
+        success(result);
       } catch (e: any) { fail(e.message ?? String(e)); }
     });
 
@@ -250,25 +227,12 @@ export function registerLogCommands(program: Command): void {
     .option("--sets <reps>", "Reps per set (comma-separated, e.g. 3,3,3)")
     .action(async (opts) => {
       try {
-        const date = opts.date as string;
-        const total_count = parseNum("total", opts.total)!;
         let sets: number[] | undefined;
         if (opts.sets !== undefined) {
           sets = parseList(opts.sets as string).map(s => parseNum("sets", s)!);
         }
-        const payload = {
-          date,
-          total_count,
-          ...sparse({ sets }),
-        };
-        await ensureDailyEntry(date);
-        const { data, error } = await getSupabase()
-          .from("pullups")
-          .upsert(payload, { onConflict: "date" })
-          .select()
-          .single();
-        if (error) fail(`Failed to log pullups: ${error.message}`);
-        success(data);
+        const result = await logPullups(opts.date as string, parseNum("total", opts.total)!, { sets });
+        success(result);
       } catch (e: any) { fail(e.message ?? String(e)); }
     });
 
@@ -280,18 +244,10 @@ export function registerLogCommands(program: Command): void {
     .requiredOption("--taken <list>", "Supplements (comma-separated)")
     .action(async (opts) => {
       try {
-        const date = opts.date as string;
         const supplements = parseList(opts.taken as string);
         if (supplements.length === 0) fail("--taken requires at least one supplement");
-        const payload = { date, supplements };
-        await ensureDailyEntry(date);
-        const { data, error } = await getSupabase()
-          .from("supplements")
-          .upsert(payload, { onConflict: "date" })
-          .select()
-          .single();
-        if (error) fail(`Failed to log supplements: ${error.message}`);
-        success(data);
+        const result = await logSupplements(opts.date as string, supplements);
+        success(result);
       } catch (e: any) { fail(e.message ?? String(e)); }
     });
 
@@ -309,27 +265,16 @@ export function registerLogCommands(program: Command): void {
     .option("--notes <text>", "Notes")
     .action(async (opts) => {
       try {
-        const date = opts.date as string;
-        const payload = {
-          date,
-          ...sparse({
-            body_fat_pct: parseNum("fat", opts.fat),
-            muscle_mass_lbs: parseNum("muscle", opts.muscle),
-            bone_mass_lbs: parseNum("bone", opts.bone),
-            body_water_pct: parseNum("water", opts.water),
-            visceral_fat: parseNum("visceral", opts.visceral),
-            bmr: parseNum("bmr", opts.bmr),
-            notes: opts.notes as string | undefined,
-          }),
-        };
-        await ensureDailyEntry(date);
-        const { data, error } = await getSupabase()
-          .from("body_composition")
-          .upsert(payload, { onConflict: "date" })
-          .select()
-          .single();
-        if (error) fail(`Failed to log bodycomp: ${error.message}`);
-        success(data);
+        const result = await logBodycomp(opts.date as string, {
+          body_fat_pct: parseNum("fat", opts.fat),
+          muscle_mass_lbs: parseNum("muscle", opts.muscle),
+          bone_mass_lbs: parseNum("bone", opts.bone),
+          body_water_pct: parseNum("water", opts.water),
+          visceral_fat: parseNum("visceral", opts.visceral),
+          bmr: parseNum("bmr", opts.bmr),
+          notes: opts.notes as string | undefined,
+        });
+        success(result);
       } catch (e: any) { fail(e.message ?? String(e)); }
     });
 }

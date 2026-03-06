@@ -25,3 +25,29 @@ export function getSupabase(): SupabaseClient<Database> {
   _client = createClient<Database>(url, key);
   return _client;
 }
+
+type TableName = keyof Database["public"]["Tables"];
+
+export function throwIfError({ error }: { error: any }) {
+  if (error) throw new Error(`Database error: ${error.message}`);
+}
+
+export async function upsertRow(table: TableName, payload: Record<string, unknown>) {
+  const { data, error } = await getSupabase()
+    .from(table)
+    .upsert(payload as any, { onConflict: "date" })
+    .select()
+    .single();
+  if (error) throw new Error(`Database error: ${error.message}`);
+  return data;
+}
+
+export async function insertRow(table: TableName, payload: Record<string, unknown>) {
+  const { data, error } = await getSupabase()
+    .from(table)
+    .insert(payload as any)
+    .select()
+    .single();
+  if (error) throw new Error(`Database error: ${error.message}`);
+  return data;
+}

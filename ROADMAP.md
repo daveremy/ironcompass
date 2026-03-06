@@ -32,9 +32,10 @@ Expose IronCompass as MCP tools so Claude can call them directly from LifeOS ses
 | Issue | Task | Status |
 |---|---|---|
 | #7 | MCP server scaffold | **done** |
-| #8 | Log tools (all `ironcompass_log_*` tools) | todo |
-| #9 | Query tools (all `ironcompass_query_*` tools) | todo |
+| #8 | Log tools (all `ironcompass_log_*` tools) | **done** |
+| #9 | Query tools (all `ironcompass_query_*` tools) | **done** |
 | #10 | Register MCP server in LifeOS Claude config | todo |
+| #27 | Set up local Supabase test environment with seed data | todo |
 
 ## Phase 3: Web Dashboard — #11
 

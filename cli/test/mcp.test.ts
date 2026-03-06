@@ -49,6 +49,22 @@ async function initAndSend(proc: ReturnType<typeof spawn>, msg: object): Promise
   return JSON.parse(await sendJsonRpc(proc, msg));
 }
 
+const EXPECTED_TOOLS = [
+  "ironcompass_query_today",
+  "ironcompass_query_week",
+  "ironcompass_query_trend",
+  "ironcompass_query_streak",
+  "ironcompass_log_daily",
+  "ironcompass_log_sleep",
+  "ironcompass_log_fasting",
+  "ironcompass_log_bp",
+  "ironcompass_log_workout",
+  "ironcompass_log_meal",
+  "ironcompass_log_pullups",
+  "ironcompass_log_supplements",
+  "ironcompass_log_bodycomp",
+];
+
 describe("ironcompass MCP server", () => {
   it("responds to initialize with server info", async () => {
     const proc = spawnMcp();
@@ -76,7 +92,7 @@ describe("ironcompass MCP server", () => {
     }
   });
 
-  it("lists ironcompass_query_today tool with date schema", async () => {
+  it("lists all 13 tools with correct schemas", async () => {
     const proc = spawnMcp();
     try {
       const response = await initAndSend(proc, {
@@ -88,10 +104,22 @@ describe("ironcompass MCP server", () => {
 
       assert.ok(response.result, "Expected result");
       const tools = response.result.tools;
-      assert.equal(tools.length, 1);
-      assert.equal(tools[0].name, "ironcompass_query_today");
-      assert.ok(tools[0].description.includes("health summary"));
-      assert.equal(tools[0].inputSchema.properties.date.type, "string");
+
+      // All 13 tools present
+      assert.equal(tools.length, 13);
+      const names = tools.map((t: any) => t.name).sort();
+      assert.deepEqual(names, [...EXPECTED_TOOLS].sort());
+
+      // bp requires systolic and diastolic
+      const bp = tools.find((t: any) => t.name === "ironcompass_log_bp");
+      const bpRequired = bp.inputSchema.required ?? [];
+      assert.ok(bpRequired.includes("systolic"), "systolic should be required");
+      assert.ok(bpRequired.includes("diastolic"), "diastolic should be required");
+
+      // workout type has enum
+      const workout = tools.find((t: any) => t.name === "ironcompass_log_workout");
+      const typeSchema = workout.inputSchema.properties.type;
+      assert.ok(typeSchema.enum || typeSchema.anyOf, "type should have enum values");
     } finally {
       proc.kill();
     }
