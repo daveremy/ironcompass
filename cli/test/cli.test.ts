@@ -44,12 +44,10 @@ describe("ironcompass CLI", () => {
     }
   });
 
-  it("stub commands return JSON error with exit 1", () => {
-    const { stderr, exitCode } = run("today");
-    assert.equal(exitCode, 1);
-    const parsed = JSON.parse(stderr);
-    assert.equal(parsed.ok, false);
-    assert.ok(parsed.error.includes("Not implemented"));
+  it("today --help shows --date option", () => {
+    const { stdout, exitCode } = run("today", "--help");
+    assert.equal(exitCode, 0);
+    assert.ok(stdout.includes("--date"));
   });
 
   it("workout --type validates against allowed choices", () => {
@@ -73,6 +71,48 @@ describe("ironcompass CLI", () => {
     const { stderr, exitCode } = run("trend");
     assert.equal(exitCode, 1);
     assert.ok(stderr.includes("metric"));
+  });
+
+  it("trend with invalid metric fails with valid metric list", () => {
+    const { stderr, exitCode } = run("trend", "bogus");
+    assert.equal(exitCode, 1);
+    const parsed = JSON.parse(stderr);
+    assert.equal(parsed.ok, false);
+    assert.ok(parsed.error.includes("Unknown metric"));
+    assert.ok(parsed.error.includes("weight"));
+  });
+
+  it("streak with invalid metric fails with valid streak list", () => {
+    const { stderr, exitCode } = run("streak", "bogus");
+    assert.equal(exitCode, 1);
+    const parsed = JSON.parse(stderr);
+    assert.equal(parsed.ok, false);
+    assert.ok(parsed.error.includes("Unknown streak"));
+    assert.ok(parsed.error.includes("alcohol-free"));
+  });
+
+  it("trend --days 0 fails with positive integer error", () => {
+    const { stderr, exitCode } = run("trend", "weight", "--days", "0");
+    assert.equal(exitCode, 1);
+    const parsed = JSON.parse(stderr);
+    assert.equal(parsed.ok, false);
+    assert.ok(parsed.error.includes("positive integer"));
+  });
+
+  it("trend --days 3.5 fails with positive integer error", () => {
+    const { stderr, exitCode } = run("trend", "weight", "--days", "3.5");
+    assert.equal(exitCode, 1);
+    const parsed = JSON.parse(stderr);
+    assert.equal(parsed.ok, false);
+    assert.ok(parsed.error.includes("positive integer"));
+  });
+
+  it("trend --days abc fails with parse error", () => {
+    const { stderr, exitCode } = run("trend", "weight", "--days", "abc");
+    assert.equal(exitCode, 1);
+    const parsed = JSON.parse(stderr);
+    assert.equal(parsed.ok, false);
+    assert.ok(parsed.error.includes("not a number"));
   });
 
   // parseNum validation

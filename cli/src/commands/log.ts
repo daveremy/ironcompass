@@ -3,14 +3,7 @@ import { fail, success } from "../output.js";
 import { getSupabase } from "../db.js";
 import { ensureDailyEntry } from "../lib/ensure-daily-entry.js";
 import { parseNum, parseList, sparse } from "../lib/parse.js";
-
-function todayDate(): string {
-  const d = new Date();
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
-}
+import { todayDate } from "../lib/date.js";
 
 const WORKOUT_TYPES = [
   "pickleball", "strength", "hike", "golf", "run",
