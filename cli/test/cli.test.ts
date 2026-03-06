@@ -52,26 +52,10 @@ describe("ironcompass CLI", () => {
     assert.ok(parsed.error.includes("Not implemented"));
   });
 
-  it("log daily stub returns JSON error with exit 1", () => {
-    const { stderr, exitCode } = run("log", "daily");
-    assert.equal(exitCode, 1);
-    const parsed = JSON.parse(stderr);
-    assert.equal(parsed.ok, false);
-    assert.ok(parsed.error.includes("issue #4"));
-  });
-
   it("workout --type validates against allowed choices", () => {
     const { stderr, exitCode } = run("log", "workout", "--type", "swimming");
     assert.equal(exitCode, 1);
     assert.ok(stderr.includes("Allowed choices"));
-  });
-
-  it("workout --type accepts valid type", () => {
-    const { stderr, exitCode } = run("log", "workout", "--type", "hike");
-    assert.equal(exitCode, 1);
-    const parsed = JSON.parse(stderr);
-    assert.equal(parsed.ok, false);
-    assert.ok(parsed.error.includes("issue #4"));
   });
 
   it("log daily --help shows --date default as YYYY-MM-DD", () => {
@@ -89,5 +73,39 @@ describe("ironcompass CLI", () => {
     const { stderr, exitCode } = run("trend");
     assert.equal(exitCode, 1);
     assert.ok(stderr.includes("metric"));
+  });
+
+  // parseNum validation
+  it("log pullups --total abc fails with parse error", () => {
+    const { stderr, exitCode } = run("log", "pullups", "--total", "abc");
+    assert.equal(exitCode, 1);
+    const parsed = JSON.parse(stderr);
+    assert.equal(parsed.ok, false);
+    assert.ok(parsed.error.includes("not a number"));
+  });
+
+  it("log bp --systolic abc fails with parse error", () => {
+    const { stderr, exitCode } = run("log", "bp", "--systolic", "abc", "--diastolic", "80");
+    assert.equal(exitCode, 1);
+    const parsed = JSON.parse(stderr);
+    assert.equal(parsed.ok, false);
+    assert.ok(parsed.error.includes("not a number"));
+  });
+
+  // sleep --help shows new options
+  it("sleep --help shows readiness, avg-hr-sleep, hrv options", () => {
+    const { stdout } = run("log", "sleep", "--help");
+    assert.ok(stdout.includes("--readiness"), "missing --readiness");
+    assert.ok(stdout.includes("--avg-hr-sleep"), "missing --avg-hr-sleep");
+    assert.ok(stdout.includes("--hrv"), "missing --hrv");
+  });
+
+  // empty supplements rejected
+  it("log supplements --taken ',' fails with empty list error", () => {
+    const { stderr, exitCode } = run("log", "supplements", "--taken", ",");
+    assert.equal(exitCode, 1);
+    const parsed = JSON.parse(stderr);
+    assert.equal(parsed.ok, false);
+    assert.ok(parsed.error.includes("at least one supplement"));
   });
 });

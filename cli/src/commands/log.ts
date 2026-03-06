@@ -1,5 +1,8 @@
 import { Command, Option } from "commander";
-import { fail } from "../output.js";
+import { fail, success } from "../output.js";
+import { getSupabase } from "../db.js";
+import { ensureDailyEntry } from "../lib/ensure-daily-entry.js";
+import { parseNum, parseList, sparse } from "../lib/parse.js";
 
 function todayDate(): string {
   const d = new Date();
@@ -20,6 +23,7 @@ export function registerLogCommands(program: Command): void {
     .command("log")
     .description("Log health data");
 
+  // --- daily ---
   log
     .command("daily")
     .description("Log daily metrics (weight, energy, alcohol)")
@@ -29,8 +33,29 @@ export function registerLogCommands(program: Command): void {
     .option("--alcohol", "Alcohol consumed")
     .option("--no-alcohol", "No alcohol consumed")
     .option("--notes <text>", "Notes")
-    .action(() => fail("Not implemented yet — see issue #4"));
+    .action(async (opts) => {
+      try {
+        const date = opts.date as string;
+        const payload = {
+          date,
+          ...sparse({
+            weight: parseNum("weight", opts.weight),
+            energy: parseNum("energy", opts.energy),
+            alcohol: opts.alcohol as boolean | undefined,
+            notes: opts.notes as string | undefined,
+          }),
+        };
+        const { data, error } = await getSupabase()
+          .from("daily_entries")
+          .upsert(payload, { onConflict: "date" })
+          .select()
+          .single();
+        if (error) fail(`Failed to log daily: ${error.message}`);
+        success(data);
+      } catch (e: any) { fail(e.message ?? String(e)); }
+    });
 
+  // --- sleep ---
   log
     .command("sleep")
     .description("Log sleep data")
@@ -42,9 +67,39 @@ export function registerLogCommands(program: Command): void {
     .option("--no-cpap", "No CPAP")
     .option("--mouth-tape", "Mouth tape used")
     .option("--no-mouth-tape", "No mouth tape")
+    .option("--readiness <score>", "Oura readiness score")
+    .option("--avg-hr-sleep <bpm>", "Average heart rate during sleep")
+    .option("--hrv <ms>", "Average HRV")
     .option("--notes <text>", "Notes")
-    .action(() => fail("Not implemented yet — see issue #4"));
+    .action(async (opts) => {
+      try {
+        const date = opts.date as string;
+        const payload = {
+          date,
+          ...sparse({
+            apple_score: parseNum("apple", opts.apple),
+            oura_score: parseNum("oura", opts.oura),
+            hours: parseNum("hours", opts.hours),
+            cpap: opts.cpap as boolean | undefined,
+            mouth_tape: opts.mouthTape as boolean | undefined,
+            oura_readiness: parseNum("readiness", opts.readiness),
+            avg_hr_sleep: parseNum("avg-hr-sleep", opts.avgHrSleep),
+            avg_hrv: parseNum("hrv", opts.hrv),
+            notes: opts.notes as string | undefined,
+          }),
+        };
+        await ensureDailyEntry(date);
+        const { data, error } = await getSupabase()
+          .from("sleep")
+          .upsert(payload, { onConflict: "date" })
+          .select()
+          .single();
+        if (error) fail(`Failed to log sleep: ${error.message}`);
+        success(data);
+      } catch (e: any) { fail(e.message ?? String(e)); }
+    });
 
+  // --- fasting ---
   log
     .command("fasting")
     .description("Log fasting window")
@@ -54,8 +109,30 @@ export function registerLogCommands(program: Command): void {
     .option("--end <time>", "Window end (HH:MM)")
     .option("--compliant", "Stuck to protocol")
     .option("--no-compliant", "Did not comply")
-    .action(() => fail("Not implemented yet — see issue #4"));
+    .action(async (opts) => {
+      try {
+        const date = opts.date as string;
+        const payload = {
+          date,
+          ...sparse({
+            protocol: opts.protocol as string | undefined,
+            window_start: opts.start as string | undefined,
+            window_end: opts.end as string | undefined,
+            compliant: opts.compliant as boolean | undefined,
+          }),
+        };
+        await ensureDailyEntry(date);
+        const { data, error } = await getSupabase()
+          .from("fasting")
+          .upsert(payload, { onConflict: "date" })
+          .select()
+          .single();
+        if (error) fail(`Failed to log fasting: ${error.message}`);
+        success(data);
+      } catch (e: any) { fail(e.message ?? String(e)); }
+    });
 
+  // --- bp ---
   log
     .command("bp")
     .description("Log blood pressure")
@@ -63,8 +140,31 @@ export function registerLogCommands(program: Command): void {
     .requiredOption("--systolic <mmHg>", "Systolic pressure")
     .requiredOption("--diastolic <mmHg>", "Diastolic pressure")
     .option("--time <time>", "Time of reading (HH:MM)")
-    .action(() => fail("Not implemented yet — see issue #4"));
+    .action(async (opts) => {
+      try {
+        const date = opts.date as string;
+        const systolic = parseNum("systolic", opts.systolic)!;
+        const diastolic = parseNum("diastolic", opts.diastolic)!;
+        const payload = {
+          date,
+          systolic,
+          diastolic,
+          ...sparse({
+            time: opts.time as string | undefined,
+          }),
+        };
+        await ensureDailyEntry(date);
+        const { data, error } = await getSupabase()
+          .from("blood_pressure")
+          .insert(payload)
+          .select()
+          .single();
+        if (error) fail(`Failed to log bp: ${error.message}`);
+        success(data);
+      } catch (e: any) { fail(e.message ?? String(e)); }
+    });
 
+  // --- workout ---
   log
     .command("workout")
     .description("Log a workout")
@@ -80,8 +180,35 @@ export function registerLogCommands(program: Command): void {
     .option("--no-planned", "Was not planned")
     .option("--completed", "Was completed")
     .option("--no-completed", "Was not completed")
-    .action(() => fail("Not implemented yet — see issue #4"));
+    .action(async (opts) => {
+      try {
+        const date = opts.date as string;
+        const payload = {
+          date,
+          type: opts.type as string,
+          ...sparse({
+            duration_min: parseNum("duration", opts.duration),
+            distance_mi: parseNum("distance", opts.distance),
+            elevation_ft: parseNum("elevation", opts.elevation),
+            calories: parseNum("calories", opts.calories),
+            avg_hr: parseNum("hr", opts.hr),
+            notes: opts.notes as string | undefined,
+            planned: opts.planned as boolean | undefined,
+            completed: opts.completed as boolean | undefined,
+          }),
+        };
+        await ensureDailyEntry(date);
+        const { data, error } = await getSupabase()
+          .from("workouts")
+          .insert(payload)
+          .select()
+          .single();
+        if (error) fail(`Failed to log workout: ${error.message}`);
+        success(data);
+      } catch (e: any) { fail(e.message ?? String(e)); }
+    });
 
+  // --- meal ---
   log
     .command("meal")
     .description("Log a meal")
@@ -94,23 +221,88 @@ export function registerLogCommands(program: Command): void {
     .option("--carbs <g>", "Carbs grams")
     .option("--calories <cal>", "Calories")
     .option("--notes <text>", "Notes")
-    .action(() => fail("Not implemented yet — see issue #4"));
+    .action(async (opts) => {
+      try {
+        const date = opts.date as string;
+        const payload = {
+          date,
+          name: opts.name as string,
+          ...sparse({
+            time: opts.time as string | undefined,
+            description: opts.description as string | undefined,
+            protein_g: parseNum("protein", opts.protein),
+            fat_g: parseNum("fat", opts.fat),
+            carbs_g: parseNum("carbs", opts.carbs),
+            calories: parseNum("calories", opts.calories),
+            notes: opts.notes as string | undefined,
+          }),
+        };
+        await ensureDailyEntry(date);
+        const { data, error } = await getSupabase()
+          .from("meals")
+          .insert(payload)
+          .select()
+          .single();
+        if (error) fail(`Failed to log meal: ${error.message}`);
+        success(data);
+      } catch (e: any) { fail(e.message ?? String(e)); }
+    });
 
+  // --- pullups ---
   log
     .command("pullups")
     .description("Log pullup count")
     .option("--date <date>", "Date (YYYY-MM-DD)", today)
     .requiredOption("--total <count>", "Total reps")
     .option("--sets <reps>", "Reps per set (comma-separated, e.g. 3,3,3)")
-    .action(() => fail("Not implemented yet — see issue #4"));
+    .action(async (opts) => {
+      try {
+        const date = opts.date as string;
+        const total_count = parseNum("total", opts.total)!;
+        let sets: number[] | undefined;
+        if (opts.sets !== undefined) {
+          sets = parseList(opts.sets as string).map(s => parseNum("sets", s)!);
+        }
+        const payload = {
+          date,
+          total_count,
+          ...sparse({ sets }),
+        };
+        await ensureDailyEntry(date);
+        const { data, error } = await getSupabase()
+          .from("pullups")
+          .upsert(payload, { onConflict: "date" })
+          .select()
+          .single();
+        if (error) fail(`Failed to log pullups: ${error.message}`);
+        success(data);
+      } catch (e: any) { fail(e.message ?? String(e)); }
+    });
 
+  // --- supplements ---
   log
     .command("supplements")
     .description("Log supplements taken")
     .option("--date <date>", "Date (YYYY-MM-DD)", today)
     .requiredOption("--taken <list>", "Supplements (comma-separated)")
-    .action(() => fail("Not implemented yet — see issue #4"));
+    .action(async (opts) => {
+      try {
+        const date = opts.date as string;
+        const supplements = parseList(opts.taken as string);
+        if (supplements.length === 0) fail("--taken requires at least one supplement");
+        const payload = { date, supplements };
+        await ensureDailyEntry(date);
+        const { data, error } = await getSupabase()
+          .from("supplements")
+          .upsert(payload, { onConflict: "date" })
+          .select()
+          .single();
+        if (error) fail(`Failed to log supplements: ${error.message}`);
+        success(data);
+      } catch (e: any) { fail(e.message ?? String(e)); }
+    });
 
+  // --- bodycomp ---
   log
     .command("bodycomp")
     .description("Log body composition (Hume Body Pod)")
@@ -122,5 +314,29 @@ export function registerLogCommands(program: Command): void {
     .option("--visceral <score>", "Visceral fat score")
     .option("--bmr <cal>", "Basal metabolic rate")
     .option("--notes <text>", "Notes")
-    .action(() => fail("Not implemented yet — see issue #4"));
+    .action(async (opts) => {
+      try {
+        const date = opts.date as string;
+        const payload = {
+          date,
+          ...sparse({
+            body_fat_pct: parseNum("fat", opts.fat),
+            muscle_mass_lbs: parseNum("muscle", opts.muscle),
+            bone_mass_lbs: parseNum("bone", opts.bone),
+            body_water_pct: parseNum("water", opts.water),
+            visceral_fat: parseNum("visceral", opts.visceral),
+            bmr: parseNum("bmr", opts.bmr),
+            notes: opts.notes as string | undefined,
+          }),
+        };
+        await ensureDailyEntry(date);
+        const { data, error } = await getSupabase()
+          .from("body_composition")
+          .upsert(payload, { onConflict: "date" })
+          .select()
+          .single();
+        if (error) fail(`Failed to log bodycomp: ${error.message}`);
+        success(data);
+      } catch (e: any) { fail(e.message ?? String(e)); }
+    });
 }
