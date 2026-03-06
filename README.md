@@ -150,6 +150,13 @@ Add to that project's `.mcp.json`:
 | `ironcompass_query_trend` | Get trend data for any metric |
 | `ironcompass_query_streak` | Get current streak |
 
+### Claude Code skills
+
+Optional skills that teach Claude to use IronCompass conversationally. See [`skills/README.md`](skills/README.md) for install instructions.
+
+- **`/health-log`** — Parse natural language ("had a protein shake, 39g protein") and log via MCP tools
+- **`/health-check`** — Review health data, trends, and streaks conversationally
+
 ## Dashboard
 
 Dark theme, athletic aesthetic. Three main views:
@@ -176,6 +183,7 @@ ironcompass/
 │   └── app/              # Next.js App Router
 ├── supabase/
 │   └── migrations/       # SQL migrations
+├── skills/               # Claude Code skills (installable)
 ├── CLAUDE.md             # AI project config
 ├── ROADMAP.md            # Issues and phases
 ├── PRD.md                # Product requirements
