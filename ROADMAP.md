@@ -21,7 +21,7 @@ Get data flowing. Log everything from the terminal. Every command returns JSON.
 | Issue | Task | Status |
 |---|---|---|
 | #2 | Supabase project setup + schema | **done** |
-| #3 | CLI scaffold (`ironcompass` command) | todo |
+| #3 | CLI scaffold (`ironcompass` command) | **done** |
 | #4 | `ironcompass log` commands (daily, sleep, fasting, workout, meal, pullups, bp, supplements) | todo |
 | #5 | `ironcompass query` commands (today, week, trend, streak, status) | todo |
 
