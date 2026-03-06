@@ -20,7 +20,7 @@ Get data flowing. Log everything from the terminal. Every command returns JSON.
 
 | Issue | Task | Status |
 |---|---|---|
-| #2 | Supabase project setup + schema | todo |
+| #2 | Supabase project setup + schema | **done** |
 | #3 | CLI scaffold (`ironcompass` command) | todo |
 | #4 | `ironcompass log` commands (daily, sleep, fasting, workout, meal, pullups, bp, supplements) | todo |
 | #5 | `ironcompass query` commands (today, week, trend, streak, status) | todo |
@@ -56,8 +56,9 @@ Connect external data sources for automatic data flow.
 |---|---|---|
 | #18 | Health Auto Export webhook endpoint | todo |
 | #19 | Hevy MCP / API integration | todo |
-| #20 | Oura Ring API integration | todo |
+| #20 | Oura Ring API integration (see [oura-cli](https://github.com/daveremy/oura-cli)) | in progress |
 | #21 | Strava API integration | todo |
+| #22 | Hevy webhook → auto-log workouts | todo |
 
 ---
 
