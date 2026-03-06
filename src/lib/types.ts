@@ -1,0 +1,154 @@
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
+
+export type Database = {
+  public: {
+    Tables: {
+      blood_pressure: {
+        Row: {
+          created_at: string | null
+          date: string
+          diastolic: number
+          id: string
+          systolic: number
+          time: string | null
+          updated_at: string | null
+        }
+      }
+      body_composition: {
+        Row: {
+          bmr: number | null
+          body_fat_pct: number | null
+          body_water_pct: number | null
+          bone_mass_lbs: number | null
+          created_at: string | null
+          date: string
+          muscle_mass_lbs: number | null
+          notes: string | null
+          updated_at: string | null
+          visceral_fat: number | null
+        }
+      }
+      daily_entries: {
+        Row: {
+          alcohol: boolean | null
+          created_at: string | null
+          date: string
+          energy: number | null
+          notes: string | null
+          updated_at: string | null
+          weight: number | null
+        }
+      }
+      fasting: {
+        Row: {
+          compliant: boolean | null
+          created_at: string | null
+          date: string
+          protocol: string | null
+          updated_at: string | null
+          window_end: string | null
+          window_start: string | null
+        }
+      }
+      meals: {
+        Row: {
+          calories: number | null
+          carbs_g: number | null
+          created_at: string | null
+          date: string
+          description: string | null
+          fat_g: number | null
+          id: string
+          name: string | null
+          notes: string | null
+          protein_g: number | null
+          time: string | null
+          updated_at: string | null
+        }
+      }
+      pullups: {
+        Row: {
+          created_at: string | null
+          date: string
+          sets: number[] | null
+          total_count: number
+          updated_at: string | null
+        }
+      }
+      sleep: {
+        Row: {
+          apple_score: number | null
+          avg_hr_sleep: number | null
+          avg_hrv: number | null
+          cpap: boolean | null
+          created_at: string | null
+          date: string
+          hours: number | null
+          mouth_tape: boolean | null
+          notes: string | null
+          oura_readiness: number | null
+          oura_score: number | null
+          updated_at: string | null
+        }
+      }
+      supplements: {
+        Row: {
+          created_at: string | null
+          date: string
+          supplements: string[]
+          updated_at: string | null
+        }
+      }
+      workouts: {
+        Row: {
+          avg_hr: number | null
+          calories: number | null
+          completed: boolean | null
+          created_at: string | null
+          date: string
+          distance_mi: number | null
+          duration_min: number | null
+          elevation_ft: number | null
+          id: string
+          notes: string | null
+          planned: boolean | null
+          type: string
+          updated_at: string | null
+        }
+      }
+    }
+  }
+}
+
+export type WorkoutType =
+  | "pickleball"
+  | "strength"
+  | "hike"
+  | "golf"
+  | "run"
+  | "elliptical"
+  | "mobility"
+  | "sauna"
+  | "hot_tub"
+  | "other"
+
+export type WorkoutRow = Database["public"]["Tables"]["workouts"]["Row"]
+
+export const WORKOUT_COLORS: Record<WorkoutType, string> = {
+  pickleball: "#22c55e", // green
+  strength: "#3b82f6",   // blue
+  hike: "#f97316",       // orange
+  golf: "#a855f7",       // purple
+  run: "#ef4444",        // red
+  elliptical: "#06b6d4", // cyan
+  mobility: "#eab308",   // yellow
+  sauna: "#f59e0b",      // amber
+  hot_tub: "#ec4899",    // pink
+  other: "#737373",      // gray
+}
