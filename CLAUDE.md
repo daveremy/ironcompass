@@ -62,7 +62,7 @@ Web Dashboard (read-only visualization)
 
 ```bash
 # Daily metrics
-ironcompass log --date 2026-03-05 --weight 174.5 --energy 3 --alcohol false
+ironcompass log daily --date 2026-03-05 --weight 174.5 --energy 3 --no-alcohol
 ironcompass log sleep --apple 78 --oura 85 --hours 7.2 --mouth-tape --no-cpap
 ironcompass log fasting --protocol 16:8 --start 12:00 --end 20:00 --compliant
 ironcompass log bp --systolic 128 --diastolic 78
