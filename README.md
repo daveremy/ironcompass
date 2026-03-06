@@ -106,11 +106,17 @@ Dark theme, athletic aesthetic. Three main views:
 
 ```
 ironcompass/
+├── cli/
+│   ├── src/
+│   │   ├── commands/     # log.ts, query.ts
+│   │   ├── lib/          # date.ts, parse.ts, ensure-daily-entry.ts
+│   │   ├── types/        # database.ts (generated)
+│   │   ├── db.ts         # Supabase client
+│   │   ├── output.ts     # JSON output helpers
+│   │   └── index.ts      # CLI entry point
+│   └── test/             # CLI tests
 ├── src/
 │   └── app/              # Next.js App Router
-│       ├── page.tsx      # Dashboard home
-│       ├── layout.tsx    # Root layout
-│       └── globals.css   # Global styles
 ├── supabase/
 │   └── migrations/       # SQL migrations
 ├── CLAUDE.md             # AI project config
@@ -129,7 +135,7 @@ npm run lint      # ESLint
 
 ## Build Phases
 
-1. **Data Layer + CLI** — Supabase schema, CLI commands, log and query (current)
+1. **Data Layer + CLI** — Supabase schema, CLI commands, log and query (done)
 2. **MCP Server** — expose tools to Claude Code
 3. **Web Dashboard** — calendar view, metrics, deploy to Vercel
 4. **Integrations** — Health Auto Export, Hevy, Oura, Strava
