@@ -4,18 +4,21 @@
   "description": "IronCompass health tracking CLI",
   "type": "module",
   "bin": {
-    "ironcompass": "./dist/index.js"
+    "ironcompass": "./dist/index.js",
+    "ironcompass-mcp": "./dist/mcp.js"
   },
   "scripts": {
-    "build": "tsc && chmod +x dist/index.js",
+    "build": "tsc && chmod +x dist/index.js dist/mcp.js",
     "dev": "tsc --watch",
     "typecheck": "tsc --noEmit",
     "test": "node --test --experimental-strip-types test/*.test.ts"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.27.1",
     "@supabase/supabase-js": "^2",
     "commander": "^13",
-    "dotenv": "^16"
+    "dotenv": "^16",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/node": "^20",

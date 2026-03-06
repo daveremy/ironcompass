@@ -17,14 +17,9 @@ export function getSupabase(): SupabaseClient<Database> {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!url || !key) {
-    console.error(
-      JSON.stringify({
-        ok: false,
-        error:
-          "Missing SUPABASE_URL/NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY. Set in environment or .env.local",
-      })
+    throw new Error(
+      "Missing SUPABASE_URL/NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY. Set in environment or .env.local"
     );
-    process.exit(1);
   }
 
   _client = createClient<Database>(url, key);

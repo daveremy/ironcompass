@@ -13,7 +13,7 @@ function throwIfError({ error }: { error: any }) {
 
 // --- fetchDay ---
 
-async function fetchDay(date: string) {
+export async function fetchDay(date: string) {
   const sb = getSupabase();
   const results = await Promise.all([
     sb.from("daily_entries").select().eq("date", date).maybeSingle(),
@@ -50,7 +50,7 @@ function avg(nums: number[]): number | null {
   return nums.reduce((a, b) => a + b, 0) / nums.length;
 }
 
-async function fetchWeek() {
+export async function fetchWeek() {
   const start = daysAgo(6);
   const end = todayDate();
   const sb = getSupabase();
@@ -154,7 +154,7 @@ async function fetchWeek() {
 
 // --- computeTrend ---
 
-const VALID_METRICS = [
+export const VALID_METRICS = [
   "weight", "energy", "sleep", "hrv", "hr-sleep", "readiness",
   "bp", "pullups", "calories", "protein", "body-fat",
 ] as const;
@@ -201,7 +201,7 @@ function multiSummaries(columns: string[], points: any[]) {
   return summaries;
 }
 
-async function computeTrend(metric: string, days: number) {
+export async function computeTrend(metric: string, days: number) {
   if (!VALID_METRICS.includes(metric as MetricName)) {
     throw new Error(`Unknown metric "${metric}". Valid metrics: ${VALID_METRICS.join(", ")}`);
   }
@@ -285,7 +285,7 @@ async function computeTrend(metric: string, days: number) {
 
 // --- computeStreak ---
 
-const VALID_STREAKS = ["alcohol-free", "fasting", "workout", "logging"] as const;
+export const VALID_STREAKS = ["alcohol-free", "fasting", "workout", "logging"] as const;
 type StreakName = (typeof VALID_STREAKS)[number];
 
 interface StreakConfig {
@@ -301,7 +301,7 @@ const STREAK_MAP: Record<StreakName, StreakConfig> = {
   logging: { table: "daily_entries", select: "date", pass: () => true },
 };
 
-async function computeStreak(metric: string) {
+export async function computeStreak(metric: string) {
   if (!VALID_STREAKS.includes(metric as StreakName)) {
     throw new Error(`Unknown streak "${metric}". Valid streaks: ${VALID_STREAKS.join(", ")}`);
   }
