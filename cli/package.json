@@ -1,0 +1,24 @@
+{
+  "name": "ironcompass",
+  "version": "0.1.0",
+  "description": "IronCompass health tracking CLI",
+  "type": "module",
+  "bin": {
+    "ironcompass": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc && chmod +x dist/index.js",
+    "dev": "tsc --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test --experimental-strip-types test/*.test.ts"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2",
+    "commander": "^13",
+    "dotenv": "^16"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "typescript": "^5"
+  }
+}
