@@ -36,7 +36,7 @@ Expose IronCompass as MCP tools so Claude can call them directly from LifeOS ses
 | #9 | Query tools (all `ironcompass_query_*` tools) | **done** |
 | #10 | Register MCP server in LifeOS Claude config | **done** |
 | #27 | Set up local Supabase test environment with seed data | todo |
-| #30 | Generic custom metrics table + `ironcompass_log_metric` tool (coffee, water, etc.) | todo |
+| #30 | Generic custom metrics table + `ironcompass_log_metric` tool (coffee, water, etc.) | **done** |
 
 ## Phase 3: Web Dashboard — #11
 
@@ -58,6 +58,15 @@ All dashboard views (monthly calendar, weekly, daily) share a single page with `
 Source integrations (Apple Health, Oura, Hevy, Strava) live in LifeOS, not IronCompass. LifeOS reconciles data from multiple sources before sending it here via MCP tools. Issues #18-22 closed — moved to LifeOS.
 
 ---
+
+## Schema Enhancements
+
+| Issue | Task | Status |
+|---|---|---|
+| #32 | Add `start_time` and `end_time` to workouts (dedup, HR correlation, chronological display) | todo |
+| #33 | Add `source` field to workouts (dedup, data quality, reconciliation) | todo |
+| #34 | Add `indoor_cycle` workout type | todo |
+| #35 | Add `details` JSONB column to workouts for type-specific data (strength sets, golf scores, etc.) | todo |
 
 ## Future Ideas
 - Apple Shortcuts for quick logging from iPhone

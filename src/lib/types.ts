@@ -150,7 +150,7 @@ export type WorkoutType =
   | "hot_tub"
   | "other"
 
-export type ViewType = "calendar" | "daily";
+export type ViewType = "calendar" | "daily" | "metrics";
 
 export type CustomMetricRow = Database["public"]["Tables"]["custom_metrics"]["Row"];
 export type BloodPressureRow = Database["public"]["Tables"]["blood_pressure"]["Row"];

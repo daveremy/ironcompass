@@ -1,4 +1,10 @@
+import Link from "next/link";
 import type { ViewType } from "@/lib/types";
+
+const NAV_ITEMS: { label: string; href: string; views: ViewType[] }[] = [
+  { label: "Calendar", href: "/", views: ["calendar", "daily"] },
+  { label: "Metrics", href: "/?view=metrics", views: ["metrics"] },
+];
 
 export default function Shell({ children, currentView = "calendar" }: { children: React.ReactNode; currentView?: ViewType }) {
   return (
@@ -13,16 +19,22 @@ export default function Shell({ children, currentView = "calendar" }: { children
           </div>
 
           <nav className="flex items-center gap-1">
-            <span className={`px-3 py-1.5 text-xs font-mono tracking-wider uppercase rounded ${
-              currentView === "calendar" || currentView === "daily"
-                ? "font-medium text-accent border border-accent/30 bg-accent/5"
-                : "text-muted cursor-not-allowed"
-            }`}>
-              Calendar
-            </span>
-            <span className="px-3 py-1.5 text-xs font-mono tracking-wider uppercase text-muted cursor-not-allowed">
-              Metrics
-            </span>
+            {NAV_ITEMS.map((item) => {
+              const active = item.views.includes(currentView);
+              return (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  className={`px-3 py-1.5 text-xs font-mono tracking-wider uppercase rounded transition-colors ${
+                    active
+                      ? "font-medium text-accent border border-accent/30 bg-accent/5"
+                      : "text-muted hover:text-foreground hover:bg-surface-hover"
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
             <span className="px-3 py-1.5 text-xs font-mono tracking-wider uppercase text-muted cursor-not-allowed">
               Weekly
             </span>
