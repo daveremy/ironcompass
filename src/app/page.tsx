@@ -1,6 +1,7 @@
 import Shell from "@/components/layout/shell";
 import Calendar from "@/components/calendar/calendar";
 import DayDetail from "@/components/day-detail/day-detail";
+import MetricsDashboard from "@/components/metrics/metrics-dashboard";
 import type { ViewType } from "@/lib/types";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -22,11 +23,15 @@ export default async function Home({
   const date = params.date && isValidDate(params.date) ? params.date : undefined;
   const month = params.month && isValidDate(params.month) ? params.month : undefined;
 
-  const currentView: ViewType = view === "daily" ? "daily" : "calendar";
+  const currentView: ViewType =
+    view === "metrics" ? "metrics" :
+    view === "daily" ? "daily" : "calendar";
 
   return (
     <Shell currentView={currentView}>
-      {currentView === "daily" && date ? (
+      {currentView === "metrics" ? (
+        <MetricsDashboard />
+      ) : currentView === "daily" && date ? (
         <DayDetail date={date} backMonth={month} />
       ) : (
         <Calendar initialMonth={month} />
