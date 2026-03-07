@@ -45,7 +45,7 @@ The visual layer. Calendar view + metrics. Deploy to Vercel.
 | Issue | Task | Status |
 |---|---|---|
 | #12 | Calendar view component (month view, color-coded workouts) | **done** |
-| #13 | Day detail view (meals, metrics, notes on click) | in progress |
+| #13 | Day detail view (meals, metrics, notes on click) | **done** |
 | #14 | Metrics dashboard (weight trend, sleep, streaks, BP) | todo |
 | #15 | Weekly summary view | todo |
 | #16 | Deploy to Vercel | todo |
@@ -53,17 +53,9 @@ The visual layer. Calendar view + metrics. Deploy to Vercel.
 ### Design decision: multi-view navigation
 All dashboard views (monthly calendar, weekly, daily) share a single page with `?view=` query param routing (`?view=daily&date=2026-03-06`). This makes every view deep-linkable so the AI assistant can open specific views by constructing a URL. Shell nav tabs and CalendarDay onClick will drive these params starting in #13.
 
-## Phase 4: Integrations — #17
+## Phase 4: Integrations
 
-Connect external data sources for automatic data flow.
-
-| Issue | Task | Status |
-|---|---|---|
-| #18 | Health Auto Export webhook endpoint | todo |
-| #19 | Hevy MCP / API integration | todo |
-| #20 | Oura Ring API integration (see [oura-cli](https://github.com/daveremy/oura-cli)) | in progress |
-| #21 | Strava API integration | todo |
-| #22 | Hevy webhook → auto-log workouts | todo |
+Source integrations (Apple Health, Oura, Hevy, Strava) live in LifeOS, not IronCompass. LifeOS reconciles data from multiple sources before sending it here via MCP tools. Issues #18-22 closed — moved to LifeOS.
 
 ---
 
