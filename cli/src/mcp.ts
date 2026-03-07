@@ -4,6 +4,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import { fetchDay, fetchWeek, computeTrend, computeStreak, VALID_METRICS, VALID_STREAKS } from "./commands/query.js";
 import { logDaily, logSleep, logFasting, logBp, logWorkout, logMeal, logPullups, logSupplements, logBodycomp, WORKOUT_TYPES } from "./commands/log.js";
+import { deleteRowById } from "./db.js";
 import { todayDate } from "./lib/date.js";
 import { dayUrl, calendarUrl } from "./lib/urls.js";
 
@@ -206,6 +207,19 @@ server.registerTool("ironcompass_log_bodycomp", {
 }, async ({ date, ...fields }) => {
   const d = date ?? todayDate();
   return logResult(d, await logBodycomp(d, fields));
+});
+
+// --- Delete tools ---
+
+server.registerTool("ironcompass_delete_workout", {
+  title: "Delete Workout",
+  description: "Delete a workout by its ID",
+  inputSchema: z.object({
+    id: z.string().uuid().describe("Workout UUID to delete"),
+  }),
+}, async ({ id }) => {
+  const deleted = await deleteRowById("workouts", id);
+  return textResult({ deleted, dashboard_url: dayUrl(deleted.date) });
 });
 
 const transport = new StdioServerTransport();
