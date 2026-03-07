@@ -51,3 +51,14 @@ export async function insertRow(table: TableName, payload: Record<string, unknow
   if (error) throw new Error(`Database error: ${error.message}`);
   return data;
 }
+
+export async function deleteRowById(table: TableName, id: string) {
+  const { data, error } = await getSupabase()
+    .from(table)
+    .delete()
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw new Error(`Database error: ${error.message}`);
+  return data;
+}

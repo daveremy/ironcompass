@@ -1,4 +1,4 @@
-import { WorkoutRow, WorkoutType, WORKOUT_COLORS } from "@/lib/types";
+import { WorkoutRow, getWorkoutColor } from "@/lib/types";
 
 interface CalendarDayProps {
   date: Date;
@@ -9,7 +9,7 @@ interface CalendarDayProps {
 }
 
 function WorkoutDot({ type }: { type: string }) {
-  const color = WORKOUT_COLORS[type as WorkoutType] ?? WORKOUT_COLORS.other;
+  const color = getWorkoutColor(type);
   return (
     <span
       className="w-2 h-2 rounded-full shrink-0"

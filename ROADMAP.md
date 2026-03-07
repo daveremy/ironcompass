@@ -36,6 +36,7 @@ Expose IronCompass as MCP tools so Claude can call them directly from LifeOS ses
 | #9 | Query tools (all `ironcompass_query_*` tools) | **done** |
 | #10 | Register MCP server in LifeOS Claude config | **done** |
 | #27 | Set up local Supabase test environment with seed data | todo |
+| #30 | Generic custom metrics table + `ironcompass_log_metric` tool (coffee, water, etc.) | todo |
 
 ## Phase 3: Web Dashboard — #11
 
@@ -43,8 +44,8 @@ The visual layer. Calendar view + metrics. Deploy to Vercel.
 
 | Issue | Task | Status |
 |---|---|---|
-| #12 | Calendar view component (month view, color-coded workouts) | in progress |
-| #13 | Day detail view (meals, metrics, notes on click) | todo |
+| #12 | Calendar view component (month view, color-coded workouts) | **done** |
+| #13 | Day detail view (meals, metrics, notes on click) | in progress |
 | #14 | Metrics dashboard (weight trend, sleep, streaks, BP) | todo |
 | #15 | Weekly summary view | todo |
 | #16 | Deploy to Vercel | todo |
