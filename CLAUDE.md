@@ -58,6 +58,11 @@ Web Dashboard (read-only visualization)
 - date, body_fat_pct, muscle_mass_lbs, bone_mass_lbs, body_water_pct, visceral_fat, bmr, notes
 - Source: Hume Body Pod (via Apple Health sync or manual entry)
 
+### Custom Metrics
+- id (UUID), date, metric_name, value, unit, notes
+- EAV-style table for ad-hoc numeric metrics (coffee cups, water intake, mood, etc.)
+- Multiple entries per day per metric; metric_name lowercased at app layer
+
 ## CLI Commands
 
 ```bash
@@ -84,11 +89,16 @@ ironcompass log supplements --taken "vitamin-d,magnesium,omega-3,creatine"
 # Body composition
 ironcompass log bodycomp --fat 22.3 --muscle 145 --bone 7.2 --water 55.1 --visceral 8 --bmr 1680
 
+# Custom metrics
+ironcompass log metric --name coffee --value 1 --unit cups
+ironcompass log metric --name water --value 500 --unit ml
+
 # Queries
 ironcompass today                    # today's full summary
 ironcompass week                     # weekly summary
 ironcompass trend weight --days 30   # 30-day weight trend
 ironcompass trend sleep --days 14    # sleep trend
+ironcompass trend coffee --days 7    # custom metric trend
 ironcompass streak alcohol-free      # current alcohol-free streak
 ironcompass streak fasting           # fasting compliance streak
 ironcompass status                   # overall dashboard summary (for daily briefing)
@@ -106,6 +116,8 @@ The MCP server exposes these as tools Claude can call directly:
 - `ironcompass_log_bp` — log blood pressure
 - `ironcompass_log_supplements` — log supplements taken
 - `ironcompass_log_bodycomp` — log body composition (Hume Body Pod)
+- `ironcompass_log_metric` — log a custom numeric metric
+- `ironcompass_delete_metric` — delete a custom metric entry by ID
 - `ironcompass_query_today` — get today's summary
 - `ironcompass_query_week` — get weekly summary
 - `ironcompass_query_trend` — get trend data for a metric

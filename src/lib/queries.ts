@@ -2,6 +2,7 @@ import { supabase } from "./supabase";
 import type {
   BloodPressureRow,
   BodyCompositionRow,
+  CustomMetricRow,
   DailyEntryRow,
   FastingRow,
   MealRow,
@@ -21,6 +22,7 @@ export interface DayData {
   pullups: PullupsRow | null;
   supplements: SupplementsRow | null;
   bodyComp: BodyCompositionRow | null;
+  customMetrics: CustomMetricRow[];
 }
 
 export async function fetchDayData(date: string): Promise<DayData> {
@@ -34,6 +36,7 @@ export async function fetchDayData(date: string): Promise<DayData> {
     pullupsRes,
     supplementsRes,
     bodyCompRes,
+    customMetricsRes,
   ] = await Promise.all([
     supabase.from("daily_entries").select("*").eq("date", date).maybeSingle(),
     supabase.from("sleep").select("*").eq("date", date).maybeSingle(),
@@ -44,11 +47,12 @@ export async function fetchDayData(date: string): Promise<DayData> {
     supabase.from("pullups").select("*").eq("date", date).maybeSingle(),
     supabase.from("supplements").select("*").eq("date", date).maybeSingle(),
     supabase.from("body_composition").select("*").eq("date", date).maybeSingle(),
+    supabase.from("custom_metrics").select("*").eq("date", date).order("metric_name").order("created_at"),
   ]);
 
   const errors = [
     dailyRes, sleepRes, fastingRes, workoutsRes, mealsRes,
-    bpRes, pullupsRes, supplementsRes, bodyCompRes,
+    bpRes, pullupsRes, supplementsRes, bodyCompRes, customMetricsRes,
   ]
     .filter((r) => r.error)
     .map((r) => r.error!.message);
@@ -67,5 +71,6 @@ export async function fetchDayData(date: string): Promise<DayData> {
     pullups: pullupsRes.data,
     supplements: supplementsRes.data,
     bodyComp: bodyCompRes.data,
+    customMetrics: customMetricsRes.data ?? [],
   };
 }

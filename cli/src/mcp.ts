@@ -3,7 +3,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { fetchDay, fetchWeek, computeTrend, computeStreak, VALID_METRICS, VALID_STREAKS } from "./commands/query.js";
-import { logDaily, logSleep, logFasting, logBp, logWorkout, logMeal, logPullups, logSupplements, logBodycomp, WORKOUT_TYPES } from "./commands/log.js";
+import { logDaily, logSleep, logFasting, logBp, logWorkout, logMeal, logPullups, logSupplements, logBodycomp, logMetric, WORKOUT_TYPES } from "./commands/log.js";
 import { deleteRowById } from "./db.js";
 import { todayDate } from "./lib/date.js";
 import { dayUrl, calendarUrl } from "./lib/urls.js";
@@ -42,7 +42,7 @@ server.registerTool("ironcompass_query_trend", {
   title: "Metric Trend",
   description: "Get trend data for a health metric over time",
   inputSchema: z.object({
-    metric: z.enum(VALID_METRICS).describe("Metric to trend"),
+    metric: z.string().describe(`Metric to trend. Built-in: ${VALID_METRICS.join(", ")}. Also accepts any custom metric name.`),
     days: z.number().optional().describe("Number of days (default 30)"),
   }),
 }, async ({ metric, days }) => {
@@ -209,7 +209,33 @@ server.registerTool("ironcompass_log_bodycomp", {
   return logResult(d, await logBodycomp(d, fields));
 });
 
+server.registerTool("ironcompass_log_metric", {
+  title: "Log Custom Metric",
+  description: "Log a custom numeric metric (e.g. coffee cups, water intake, mood score)",
+  inputSchema: z.object({
+    date: optDate,
+    name: z.string().describe("Metric name (e.g. coffee, water, mood)"),
+    value: z.number().describe("Numeric value"),
+    unit: z.string().optional().describe("Unit (e.g. cups, ml, score)"),
+    notes: z.string().optional(),
+  }),
+}, async ({ date, name, value, unit, notes }) => {
+  const d = date ?? todayDate();
+  return logResult(d, await logMetric(d, name, value, { unit, notes }));
+});
+
 // --- Delete tools ---
+
+server.registerTool("ironcompass_delete_metric", {
+  title: "Delete Custom Metric",
+  description: "Delete a custom metric entry by its ID",
+  inputSchema: z.object({
+    id: z.string().uuid().describe("Custom metric UUID to delete"),
+  }),
+}, async ({ id }) => {
+  const deleted = await deleteRowById("custom_metrics", id);
+  return textResult({ deleted, dashboard_url: dayUrl(deleted.date) });
+});
 
 server.registerTool("ironcompass_delete_workout", {
   title: "Delete Workout",
