@@ -3,6 +3,7 @@ import { fail, success } from "../output.js";
 import { getSupabase, throwIfError } from "../db.js";
 import { todayDate, daysAgo } from "../lib/date.js";
 import { parseNum } from "../lib/parse.js";
+import { dayUrl, calendarUrl } from "../lib/urls.js";
 import type { Database } from "../types/database.js";
 
 type TableName = keyof Database["public"]["Tables"];
@@ -27,6 +28,7 @@ export async function fetchDay(date: string) {
 
   return {
     date,
+    dashboard_url: dayUrl(date),
     daily: daily.data ?? null,
     sleep: sleep.data ?? null,
     fasting: fasting.data ?? null,
@@ -112,6 +114,7 @@ export async function fetchWeek() {
   return {
     start,
     end,
+    dashboard_url: calendarUrl(),
     days_logged: dailyRows.length,
     weight: {
       first: weights.length > 0 ? weights[0].weight : null,

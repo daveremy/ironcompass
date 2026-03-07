@@ -5,11 +5,16 @@ import { z } from "zod";
 import { fetchDay, fetchWeek, computeTrend, computeStreak, VALID_METRICS, VALID_STREAKS } from "./commands/query.js";
 import { logDaily, logSleep, logFasting, logBp, logWorkout, logMeal, logPullups, logSupplements, logBodycomp, WORKOUT_TYPES } from "./commands/log.js";
 import { todayDate } from "./lib/date.js";
+import { dayUrl, calendarUrl } from "./lib/urls.js";
 
 const server = new McpServer({ name: "ironcompass", version: "0.1.0" });
 
 function textResult(data: unknown) {
   return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
+}
+
+function logResult(date: string, data: unknown) {
+  return textResult({ ...data as Record<string, unknown>, dashboard_url: dayUrl(date) });
 }
 
 const optDate = z.string().optional().describe("YYYY-MM-DD, defaults to today");
@@ -40,7 +45,8 @@ server.registerTool("ironcompass_query_trend", {
     days: z.number().optional().describe("Number of days (default 30)"),
   }),
 }, async ({ metric, days }) => {
-  return textResult(await computeTrend(metric, days ?? 30));
+  const result = await computeTrend(metric, days ?? 30);
+  return textResult({ ...result, dashboard_url: calendarUrl() });
 });
 
 server.registerTool("ironcompass_query_streak", {
@@ -50,7 +56,8 @@ server.registerTool("ironcompass_query_streak", {
     metric: z.enum(VALID_STREAKS).describe("Streak metric"),
   }),
 }, async ({ metric }) => {
-  return textResult(await computeStreak(metric));
+  const result = await computeStreak(metric);
+  return textResult({ ...result, dashboard_url: calendarUrl() });
 });
 
 // --- Log tools ---
@@ -66,7 +73,8 @@ server.registerTool("ironcompass_log_daily", {
     notes: z.string().optional(),
   }),
 }, async ({ date, ...fields }) => {
-  return textResult(await logDaily(date ?? todayDate(), fields));
+  const d = date ?? todayDate();
+  return logResult(d, await logDaily(d, fields));
 });
 
 server.registerTool("ironcompass_log_sleep", {
@@ -85,7 +93,8 @@ server.registerTool("ironcompass_log_sleep", {
     notes: z.string().optional(),
   }),
 }, async ({ date, ...fields }) => {
-  return textResult(await logSleep(date ?? todayDate(), fields));
+  const d = date ?? todayDate();
+  return logResult(d, await logSleep(d, fields));
 });
 
 server.registerTool("ironcompass_log_fasting", {
@@ -99,7 +108,8 @@ server.registerTool("ironcompass_log_fasting", {
     compliant: z.boolean().optional().describe("Stuck to protocol"),
   }),
 }, async ({ date, ...fields }) => {
-  return textResult(await logFasting(date ?? todayDate(), fields));
+  const d = date ?? todayDate();
+  return logResult(d, await logFasting(d, fields));
 });
 
 server.registerTool("ironcompass_log_bp", {
@@ -112,7 +122,8 @@ server.registerTool("ironcompass_log_bp", {
     time: z.string().optional().describe("Time of reading (HH:MM)"),
   }),
 }, async ({ date, systolic, diastolic, time }) => {
-  return textResult(await logBp(date ?? todayDate(), systolic, diastolic, { time }));
+  const d = date ?? todayDate();
+  return logResult(d, await logBp(d, systolic, diastolic, { time }));
 });
 
 server.registerTool("ironcompass_log_workout", {
@@ -131,7 +142,8 @@ server.registerTool("ironcompass_log_workout", {
     completed: z.boolean().optional().describe("Was completed"),
   }),
 }, async ({ date, type, ...fields }) => {
-  return textResult(await logWorkout(date ?? todayDate(), type, fields));
+  const d = date ?? todayDate();
+  return logResult(d, await logWorkout(d, type, fields));
 });
 
 server.registerTool("ironcompass_log_meal", {
@@ -149,7 +161,8 @@ server.registerTool("ironcompass_log_meal", {
     notes: z.string().optional(),
   }),
 }, async ({ date, name, ...fields }) => {
-  return textResult(await logMeal(date ?? todayDate(), name, fields));
+  const d = date ?? todayDate();
+  return logResult(d, await logMeal(d, name, fields));
 });
 
 server.registerTool("ironcompass_log_pullups", {
@@ -161,7 +174,8 @@ server.registerTool("ironcompass_log_pullups", {
     sets: z.array(z.number()).optional().describe("Reps per set"),
   }),
 }, async ({ date, total_count, sets }) => {
-  return textResult(await logPullups(date ?? todayDate(), total_count, { sets }));
+  const d = date ?? todayDate();
+  return logResult(d, await logPullups(d, total_count, { sets }));
 });
 
 server.registerTool("ironcompass_log_supplements", {
@@ -172,7 +186,8 @@ server.registerTool("ironcompass_log_supplements", {
     supplements: z.array(z.string()).nonempty().describe("Supplements taken"),
   }),
 }, async ({ date, supplements }) => {
-  return textResult(await logSupplements(date ?? todayDate(), supplements));
+  const d = date ?? todayDate();
+  return logResult(d, await logSupplements(d, supplements));
 });
 
 server.registerTool("ironcompass_log_bodycomp", {
@@ -189,7 +204,8 @@ server.registerTool("ironcompass_log_bodycomp", {
     notes: z.string().optional(),
   }),
 }, async ({ date, ...fields }) => {
-  return textResult(await logBodycomp(date ?? todayDate(), fields));
+  const d = date ?? todayDate();
+  return logResult(d, await logBodycomp(d, fields));
 });
 
 const transport = new StdioServerTransport();

@@ -43,8 +43,8 @@ The visual layer. Calendar view + metrics. Deploy to Vercel.
 
 | Issue | Task | Status |
 |---|---|---|
-| #12 | Calendar view component (month view, color-coded workouts) | in progress |
-| #13 | Day detail view (meals, metrics, notes on click) | todo |
+| #12 | Calendar view component (month view, color-coded workouts) | **done** |
+| #13 | Day detail view (meals, metrics, notes on click) | in progress |
 | #14 | Metrics dashboard (weight trend, sleep, streaks, BP) | todo |
 | #15 | Weekly summary view | todo |
 | #16 | Deploy to Vercel | todo |

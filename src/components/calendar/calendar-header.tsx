@@ -1,7 +1,4 @@
-const MONTHS = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
-];
+import { MONTHS } from "@/lib/date";
 
 interface CalendarHeaderProps {
   currentMonth: Date;

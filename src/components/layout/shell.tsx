@@ -1,4 +1,6 @@
-export default function Shell({ children }: { children: React.ReactNode }) {
+import type { ViewType } from "@/lib/types";
+
+export default function Shell({ children, currentView = "calendar" }: { children: React.ReactNode; currentView?: ViewType }) {
   return (
     <div className="min-h-screen bg-background hud-scanlines">
       <header className="border-b border-border bg-surface/80 backdrop-blur-sm sticky top-0 z-50">
@@ -11,7 +13,11 @@ export default function Shell({ children }: { children: React.ReactNode }) {
           </div>
 
           <nav className="flex items-center gap-1">
-            <span className="px-3 py-1.5 text-xs font-mono font-medium tracking-wider uppercase text-accent border border-accent/30 rounded bg-accent/5">
+            <span className={`px-3 py-1.5 text-xs font-mono tracking-wider uppercase rounded ${
+              currentView === "calendar" || currentView === "daily"
+                ? "font-medium text-accent border border-accent/30 bg-accent/5"
+                : "text-muted cursor-not-allowed"
+            }`}>
               Calendar
             </span>
             <span className="px-3 py-1.5 text-xs font-mono tracking-wider uppercase text-muted cursor-not-allowed">

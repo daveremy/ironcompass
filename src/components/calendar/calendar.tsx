@@ -1,25 +1,32 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import type { WorkoutRow } from "@/lib/types";
-import { getMonday, formatDate, addDays, isSameDay } from "@/lib/date";
+import { getMonday, formatDate, addDays, isSameDay, parseDate } from "@/lib/date";
 import CalendarHeader from "./calendar-header";
 import CalendarDay from "./calendar-day";
 
 const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
-export default function Calendar() {
+export default function Calendar({ initialMonth }: { initialMonth?: string } = {}) {
+  const router = useRouter();
   const [currentMonth, setCurrentMonth] = useState<Date | null>(null);
   const [workouts, setWorkouts] = useState<WorkoutRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Initialize on client to avoid hydration mismatch
+  // Initialize on client to avoid hydration mismatch; resync when initialMonth changes
   useEffect(() => {
-    const now = new Date();
-    setCurrentMonth(new Date(now.getFullYear(), now.getMonth(), 1));
-  }, []);
+    if (initialMonth) {
+      const d = parseDate(initialMonth);
+      setCurrentMonth(new Date(d.getFullYear(), d.getMonth(), 1));
+    } else {
+      const now = new Date();
+      setCurrentMonth(new Date(now.getFullYear(), now.getMonth(), 1));
+    }
+  }, [initialMonth]);
 
   const fetchWorkouts = useCallback(
     async (month: Date, signal: AbortSignal) => {
@@ -52,6 +59,13 @@ export default function Calendar() {
 
   useEffect(() => {
     if (!currentMonth) return;
+    // Keep URL in sync so month is bookmarkable
+    const monthStr = formatDate(currentMonth);
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("month") !== monthStr) {
+      url.searchParams.set("month", monthStr);
+      window.history.replaceState(window.history.state, "", url.toString());
+    }
     const controller = new AbortController();
     fetchWorkouts(currentMonth, controller.signal);
     return () => controller.abort();
@@ -149,7 +163,7 @@ export default function Calendar() {
                   workouts={dayWorkouts}
                   isCurrentMonth={date.getMonth() === currentMonth.getMonth()}
                   isToday={isSameDay(date, today)}
-                  onClick={() => {}}
+                  onClick={() => router.push(`/?view=daily&date=${key}&month=${formatDate(currentMonth)}`)}
                 />
               </div>
             );

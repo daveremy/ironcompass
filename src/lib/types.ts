@@ -138,6 +138,16 @@ export type WorkoutType =
   | "hot_tub"
   | "other"
 
+export type ViewType = "calendar" | "daily";
+
+export type BloodPressureRow = Database["public"]["Tables"]["blood_pressure"]["Row"];
+export type BodyCompositionRow = Database["public"]["Tables"]["body_composition"]["Row"];
+export type DailyEntryRow = Database["public"]["Tables"]["daily_entries"]["Row"];
+export type FastingRow = Database["public"]["Tables"]["fasting"]["Row"];
+export type MealRow = Database["public"]["Tables"]["meals"]["Row"];
+export type PullupsRow = Database["public"]["Tables"]["pullups"]["Row"];
+export type SleepRow = Database["public"]["Tables"]["sleep"]["Row"];
+export type SupplementsRow = Database["public"]["Tables"]["supplements"]["Row"];
 export type WorkoutRow = Database["public"]["Tables"]["workouts"]["Row"]
 
 export const WORKOUT_COLORS: Record<WorkoutType, string> = {
@@ -151,4 +161,8 @@ export const WORKOUT_COLORS: Record<WorkoutType, string> = {
   sauna: "#f59e0b",      // amber
   hot_tub: "#ec4899",    // pink
   other: "#737373",      // gray
+}
+
+export function getWorkoutColor(type: string): string {
+  return WORKOUT_COLORS[type as WorkoutType] ?? WORKOUT_COLORS.other;
 }
