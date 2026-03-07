@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      custom_metrics: {
+        Row: {
+          created_at: string | null
+          date: string
+          id: string
+          metric_name: string
+          notes: string | null
+          unit: string | null
+          updated_at: string | null
+          value: number
+        }
+        Insert: {
+          created_at?: string | null
+          date: string
+          id?: string
+          metric_name: string
+          notes?: string | null
+          unit?: string | null
+          updated_at?: string | null
+          value: number
+        }
+        Update: {
+          created_at?: string | null
+          date?: string
+          id?: string
+          metric_name?: string
+          notes?: string | null
+          unit?: string | null
+          updated_at?: string | null
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_metrics_date_fkey"
+            columns: ["date"]
+            isOneToOne: false
+            referencedRelation: "daily_entries"
+            referencedColumns: ["date"]
+          },
+        ]
+      }
       blood_pressure: {
         Row: {
           created_at: string | null

@@ -9,6 +9,18 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      custom_metrics: {
+        Row: {
+          created_at: string | null
+          date: string
+          id: string
+          metric_name: string
+          notes: string | null
+          unit: string | null
+          updated_at: string | null
+          value: number
+        }
+      }
       blood_pressure: {
         Row: {
           created_at: string | null
@@ -140,6 +152,7 @@ export type WorkoutType =
 
 export type ViewType = "calendar" | "daily";
 
+export type CustomMetricRow = Database["public"]["Tables"]["custom_metrics"]["Row"];
 export type BloodPressureRow = Database["public"]["Tables"]["blood_pressure"]["Row"];
 export type BodyCompositionRow = Database["public"]["Tables"]["body_composition"]["Row"];
 export type DailyEntryRow = Database["public"]["Tables"]["daily_entries"]["Row"];

@@ -58,6 +58,11 @@ export async function logBodycomp(date: string, fields: { body_fat_pct?: number;
   return upsertRow("body_composition", { date, ...sparse(fields) });
 }
 
+export async function logMetric(date: string, metric_name: string, value: number, fields: { unit?: string; notes?: string } = {}) {
+  await ensureDailyEntry(date);
+  return insertRow("custom_metrics", { date, metric_name: metric_name.toLowerCase(), value, ...sparse(fields) });
+}
+
 export function registerLogCommands(program: Command): void {
   const today = todayDate();
   const log = program
@@ -272,6 +277,25 @@ export function registerLogCommands(program: Command): void {
           body_water_pct: parseNum("water", opts.water),
           visceral_fat: parseNum("visceral", opts.visceral),
           bmr: parseNum("bmr", opts.bmr),
+          notes: opts.notes as string | undefined,
+        });
+        success(result);
+      } catch (e: any) { fail(e.message ?? String(e)); }
+    });
+
+  // --- metric ---
+  log
+    .command("metric")
+    .description("Log a custom metric")
+    .option("--date <date>", "Date (YYYY-MM-DD)", today)
+    .requiredOption("--name <name>", "Metric name (e.g. coffee, water)")
+    .requiredOption("--value <number>", "Numeric value")
+    .option("--unit <unit>", "Unit (e.g. cups, ml)")
+    .option("--notes <text>", "Notes")
+    .action(async (opts) => {
+      try {
+        const result = await logMetric(opts.date as string, opts.name as string, parseNum("value", opts.value)!, {
+          unit: opts.unit as string | undefined,
           notes: opts.notes as string | undefined,
         });
         success(result);

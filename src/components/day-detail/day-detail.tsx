@@ -12,6 +12,7 @@ import SectionMeals from "./section-meals";
 import SectionPullups from "./section-pullups";
 import SectionSupplements from "./section-supplements";
 import SectionBodyComp from "./section-body-comp";
+import SectionCustomMetrics from "./section-custom-metrics";
 
 export default function DayDetail({ date, backMonth }: { date: string; backMonth?: string }) {
   const [data, setData] = useState<DayData | null>(null);
@@ -72,6 +73,9 @@ export default function DayDetail({ date, backMonth }: { date: string; backMonth
         <div className="col-span-full">
           <SectionBodyComp data={data!.bodyComp} />
         </div>
+        <div className="col-span-full">
+          <SectionCustomMetrics data={data!.customMetrics} />
+        </div>
       </div>
     </div>
   );
@@ -82,10 +86,10 @@ function LoadingSkeleton({ date, backMonth }: { date: string; backMonth?: string
     <div>
       <DayHeader date={date} backMonth={backMonth} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {Array.from({ length: 9 }).map((_, i) => (
+        {Array.from({ length: 10 }).map((_, i) => (
           <div
             key={i}
-            className={`skeleton rounded-lg h-32 ${[4, 5, 8].includes(i) ? "col-span-full" : ""}`}
+            className={`skeleton rounded-lg h-32 ${[4, 5, 8, 9].includes(i) ? "col-span-full" : ""}`}
             style={{ animationDelay: `${i * 50}ms` }}
           />
         ))}

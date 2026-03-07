@@ -22,9 +22,10 @@ export async function fetchDay(date: string) {
     sb.from("pullups").select().eq("date", date).maybeSingle(),
     sb.from("supplements").select().eq("date", date).maybeSingle(),
     sb.from("body_composition").select().eq("date", date).maybeSingle(),
+    sb.from("custom_metrics").select().eq("date", date),
   ]);
   results.forEach(throwIfError);
-  const [daily, sleep, fasting, bp, workouts, meals, pullups, supplements, bodycomp] = results;
+  const [daily, sleep, fasting, bp, workouts, meals, pullups, supplements, bodycomp, customMetrics] = results;
 
   return {
     date,
@@ -38,6 +39,7 @@ export async function fetchDay(date: string) {
     pullups: pullups.data ?? null,
     supplements: supplements.data ?? null,
     body_composition: bodycomp.data ?? null,
+    custom_metrics: customMetrics.data ?? [],
   };
 }
 
@@ -60,9 +62,10 @@ export async function fetchWeek() {
     sb.from("meals").select().gte("date", start).lte("date", end).order("date"),
     sb.from("fasting").select().gte("date", start).lte("date", end).order("date"),
     sb.from("pullups").select().gte("date", start).lte("date", end).order("date"),
+    sb.from("custom_metrics").select().gte("date", start).lte("date", end).order("date"),
   ]);
   results.forEach(throwIfError);
-  const [daily, sleep, workouts, meals, fasting, pullups] = results;
+  const [daily, sleep, workouts, meals, fasting, pullups, customMetrics] = results;
 
   const dailyRows = daily.data ?? [];
   const sleepRows = sleep.data ?? [];
@@ -70,6 +73,7 @@ export async function fetchWeek() {
   const mealRows = meals.data ?? [];
   const fastingRows = fasting.data ?? [];
   const pullupRows = pullups.data ?? [];
+  const customMetricRows = customMetrics.data ?? [];
 
   // Weight delta
   const weights = dailyRows
@@ -111,6 +115,22 @@ export async function fetchWeek() {
   // Pullups
   const pullupTotal = pullupRows.reduce((s: number, r: any) => s + (r.total_count ?? 0), 0);
 
+  // Custom metrics: group by name, sum values per day, average across days
+  const customByName: Record<string, { total: number; dates: Set<string>; unit: string | null }> = {};
+  for (const r of customMetricRows as any[]) {
+    const entry = customByName[r.metric_name] ??= { total: 0, dates: new Set(), unit: null };
+    entry.total += Number(r.value);
+    entry.dates.add(r.date);
+    entry.unit ??= r.unit;
+  }
+  const customMetricsSummary: Record<string, { daily_avg: number | null; total: number; days: number; unit: string | null }> = {};
+  for (const [name, { total, dates, unit }] of Object.entries(customByName)) {
+    customMetricsSummary[name] = {
+      daily_avg: dates.size > 0 ? total / dates.size : null,
+      total, days: dates.size, unit,
+    };
+  }
+
   return {
     start,
     end,
@@ -148,6 +168,7 @@ export async function fetchWeek() {
       total: pullupTotal,
       days: pullupRows.length,
     },
+    custom_metrics: customMetricsSummary,
   };
 }
 
@@ -191,6 +212,16 @@ function singleSummary(values: number[]) {
   };
 }
 
+function dailySumPoints(rows: any[], col: string = "value"): Array<{ date: string; value: number }> {
+  const byDate: Record<string, number> = {};
+  for (const r of rows) {
+    if (r[col] != null) byDate[r.date] = (byDate[r.date] ?? 0) + Number(r[col]);
+  }
+  return Object.entries(byDate)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([date, value]) => ({ date, value }));
+}
+
 function multiSummaries(columns: string[], points: any[]) {
   const summaries: Record<string, any> = {};
   for (const col of columns) {
@@ -200,12 +231,38 @@ function multiSummaries(columns: string[], points: any[]) {
   return summaries;
 }
 
+async function computeCustomMetricTrend(metric: string, days: number) {
+  const start = daysAgo(days - 1);
+  const end = todayDate();
+  const sb = getSupabase();
+
+  const { data: rows, error } = await sb
+    .from("custom_metrics")
+    .select("date, value, unit")
+    .eq("metric_name", metric.toLowerCase())
+    .gte("date", start)
+    .lte("date", end)
+    .order("date", { ascending: true });
+
+  if (error) throw new Error(`Query failed: ${error.message}`);
+  const data = rows ?? [];
+  const points = dailySumPoints(data);
+  const unit = (data as any[]).find((r) => r.unit != null)?.unit ?? null;
+
+  return {
+    metric, days, start, end, unit, points,
+    summary: singleSummary(points.map((p) => p.value)),
+  };
+}
+
 export async function computeTrend(metric: string, days: number) {
-  if (!VALID_METRICS.includes(metric as MetricName)) {
-    throw new Error(`Unknown metric "${metric}". Valid metrics: ${VALID_METRICS.join(", ")}`);
-  }
   if (!Number.isInteger(days) || days <= 0) {
     throw new Error(`--days must be a positive integer, got "${days}"`);
+  }
+
+  // Fall back to custom_metrics if not a built-in metric
+  if (!VALID_METRICS.includes(metric as MetricName)) {
+    return computeCustomMetricTrend(metric, days);
   }
 
   const cfg = METRIC_MAP[metric as MetricName];
@@ -266,16 +323,7 @@ export async function computeTrend(metric: string, days: number) {
   }
 
   // daily-sum
-  const col = cfg.columns[0];
-  const byDate: Record<string, number> = {};
-  for (const r of data as any[]) {
-    if (r[col] != null) {
-      byDate[r.date] = (byDate[r.date] ?? 0) + r[col];
-    }
-  }
-  const points = Object.entries(byDate)
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([date, value]) => ({ date, value }));
+  const points = dailySumPoints(data, cfg.columns[0]);
   return {
     metric, days, start, end, points,
     summary: singleSummary(points.map((p) => p.value)),
@@ -368,7 +416,7 @@ export function registerQueryCommands(program: Command): void {
   program
     .command("trend")
     .description("Trend data for a metric")
-    .argument("<metric>", `Metric to trend (${VALID_METRICS.join(", ")})`)
+    .argument("<metric>", `Metric to trend (${VALID_METRICS.join(", ")}, or any custom metric name)`)
     .option("--days <n>", "Number of days", "30")
     .action(async (metric, opts) => {
       try {
