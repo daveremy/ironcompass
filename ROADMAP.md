@@ -36,6 +36,7 @@ Expose IronCompass as MCP tools so Claude can call them directly from LifeOS ses
 | #9 | Query tools (all `ironcompass_query_*` tools) | **done** |
 | #10 | Register MCP server in LifeOS Claude config | **done** |
 | #27 | Set up local Supabase test environment with seed data | todo |
+| #30 | Generic custom metrics table + `ironcompass_log_metric` tool (coffee, water, etc.) | todo |
 
 ## Phase 3: Web Dashboard — #11
 
