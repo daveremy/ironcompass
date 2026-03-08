@@ -1,8 +1,8 @@
 import { Command, Option } from "commander";
 import { fail, success } from "../output.js";
-import { upsertRow, insertRow } from "../db.js";
+import { getSupabase, upsertRow, insertRow } from "../db.js";
 import { ensureDailyEntry } from "../lib/ensure-daily-entry.js";
-import { parseNum, parseList, parseJsonObject, parseTimestamp, sparse } from "../lib/parse.js";
+import { parseNum, parseList, parseJsonObject, parseTimestamp, mergeSupplements, sparse } from "../lib/parse.js";
 import { todayDate } from "../lib/date.js";
 
 export const WORKOUT_TYPES = [
@@ -56,7 +56,10 @@ export async function logPullups(date: string, total_count: number, fields: { se
 
 export async function logSupplements(date: string, supplements: string[]) {
   await ensureDailyEntry(date);
-  return upsertRow("supplements", { date, supplements });
+  const { data: existing, error } = await getSupabase().from("supplements").select("supplements").eq("date", date).maybeSingle();
+  if (error) throw new Error(`Database error: ${error.message}`);
+  const merged = mergeSupplements(existing?.supplements ?? [], supplements);
+  return upsertRow("supplements", { date, supplements: merged });
 }
 
 export async function logBodycomp(date: string, fields: { body_fat_pct?: number; muscle_mass_lbs?: number; bone_mass_lbs?: number; body_water_pct?: number; visceral_fat?: number; bmr?: number; notes?: string } = {}) {

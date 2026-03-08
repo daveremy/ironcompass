@@ -65,8 +65,8 @@ Source integrations (Apple Health, Oura, Hevy, Strava) live in LifeOS, not IronC
 |---|---|---|
 | #32 | Add `start_time` and `end_time` to workouts (dedup, HR correlation, chronological display) | **done** |
 | #33 | Add `source` field to workouts (dedup, data quality, reconciliation) | **done** |
-| #43 | Bug: `ironcompass_log_supplements` overwrites instead of appending | todo |
-| #44 | Change `energy` field from integer to decimal | todo |
+| #43 | Bug: `ironcompass_log_supplements` overwrites instead of appending | **done** |
+| #44 | Change `energy` field from integer to decimal | **done** |
 | #34 | Add `indoor_cycle` workout type | **done** |
 | #35 | Add `details` JSONB column to workouts for type-specific data (strength sets, golf scores, etc.) | **done** |
 | #37 | Deduplicate WorkoutType and Database types across CLI and web | todo |

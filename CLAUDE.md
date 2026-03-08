@@ -33,7 +33,7 @@ Web Dashboard (read-only visualization)
 ## Data Model
 
 ### Daily Entry
-- date, weight, energy (1-5), alcohol (bool), notes
+- date, weight, energy (1-5, decimal), alcohol (bool), notes
 - sleep: apple_score, oura_score, hours, cpap (bool), mouth_tape (bool), notes
 - fasting: protocol, window_start, window_end, compliant (bool)
 - blood_pressure: systolic, diastolic, time
