@@ -339,13 +339,14 @@ interface StreakConfig {
   table: TableName;
   select: string;
   pass: (row: any) => boolean;
+  logged: (row: any) => boolean;
 }
 
 const STREAK_MAP: Record<StreakName, StreakConfig> = {
-  "alcohol-free": { table: "daily_entries", select: "date, alcohol", pass: (r) => r.alcohol === false },
-  fasting: { table: "fasting", select: "date, compliant", pass: (r) => r.compliant === true },
-  workout: { table: "workouts", select: "date", pass: () => true },
-  logging: { table: "daily_entries", select: "date", pass: () => true },
+  "alcohol-free": { table: "daily_entries", select: "date, alcohol", pass: (r) => r.alcohol === false, logged: (r) => r.alcohol != null },
+  fasting: { table: "fasting", select: "date, compliant", pass: (r) => r.compliant === true, logged: (r) => r.compliant != null },
+  workout: { table: "workouts", select: "date", pass: () => true, logged: () => true },
+  logging: { table: "daily_entries", select: "date", pass: () => true, logged: () => true },
 };
 
 export async function computeStreak(metric: string) {
@@ -375,15 +376,20 @@ export async function computeStreak(metric: string) {
 
   const earliest = rangeStart;
   let count = 0;
-  for (let i = 0; ; i++) {
+  let offset = 0;
+  // Skip today if not yet logged (no row, or relevant field still null)
+  const todayRow = rowsByDate.get(daysAgo(0));
+  if (!todayRow || !cfg.logged(todayRow)) offset = 1;
+
+  for (let i = offset; ; i++) {
     const d = daysAgo(i);
     if (d < earliest) break;
     const row = rowsByDate.get(d);
-    if (row && cfg.pass(row)) { count++; }
+    if (row && cfg.pass(row)) count++;
     else break;
   }
 
-  const startDate = count > 0 ? daysAgo(count - 1) : null;
+  const startDate = count > 0 ? daysAgo(count + offset - 1) : null;
   return { metric, current_streak: count, start_date: startDate, as_of: today };
 }
 

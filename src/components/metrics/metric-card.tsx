@@ -1,8 +1,11 @@
 import SectionCard from "@/components/day-detail/section-card";
 import { Stat } from "@/components/day-detail/section-vitals";
 import Sparkline from "./sparkline";
+import ChartContainer from "./chart-container";
 import { formatNumber } from "@/lib/format";
 import type { TrendSummary } from "@/lib/queries";
+
+const formatYNumber = (v: number) => formatNumber(v) ?? "";
 
 interface MetricCardProps {
   title: string;
@@ -29,14 +32,19 @@ export default function MetricCard({
     <SectionCard title={title} accent={accent} empty={empty}>
       {!empty && (
         <>
-          <div className="h-20 mb-3">
+          <ChartContainer
+            points={points}
+            goalLine={goalLine}
+            yLabels
+            formatY={formatYNumber}
+          >
             <Sparkline
               points={points}
               color={accent}
               goalLine={goalLine}
               goalColor={goalLine != null ? `${accent}44` : undefined}
             />
-          </div>
+          </ChartContainer>
           <div className="grid grid-cols-4 gap-2">
             <Stat label="Current" value={formatNumber(points[points.length - 1].value)} unit={unit} />
             <Stat label="Avg" value={formatNumber(summary.avg)} unit={unit} />

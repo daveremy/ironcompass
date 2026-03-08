@@ -1,5 +1,13 @@
 import { memo } from "react";
 
+export function computeYRange(values: number[]): { yMin: number; yMax: number } {
+  if (values.length === 0) return { yMin: 0, yMax: 1 };
+  let yMin = Math.min(...values);
+  let yMax = Math.max(...values);
+  const yRange = yMax - yMin || 1;
+  return { yMin: yMin - yRange * 0.1, yMax: yMax + yRange * 0.1 };
+}
+
 interface SparklinePoint {
   date: string;
   value: number;
@@ -33,13 +41,7 @@ function SparklineInner({
   // Compute y range including goal line
   const values = points.map((p) => p.value);
   if (goalLine != null) values.push(goalLine);
-  let yMin = Math.min(...values);
-  let yMax = Math.max(...values);
-
-  // Add 10% padding so lines don't touch edges
-  const yRange = yMax - yMin || 1;
-  yMin -= yRange * 0.1;
-  yMax += yRange * 0.1;
+  const { yMin, yMax } = computeYRange(values);
 
   // Map dates to x positions proportional to actual time gaps
   const times = points.map((p) => new Date(p.date + "T00:00:00").getTime());
