@@ -79,6 +79,7 @@ Source integrations (Apple Health, Oura, Hevy, Strava) live in LifeOS, not IronC
 | Issue | Task | Status |
 |---|---|---|
 | #48 | Streak cards show 0 when today not yet logged | todo |
+| #50 | Add axis labels to metrics dashboard charts | todo |
 
 ## Features
 
