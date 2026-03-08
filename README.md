@@ -107,7 +107,7 @@ All commands return structured JSON.
 
 ## MCP Server
 
-IronCompass exposes 16 tools via [Model Context Protocol](https://modelcontextprotocol.io/) so Claude can log and query health data directly.
+IronCompass exposes 17 tools via [Model Context Protocol](https://modelcontextprotocol.io/) so Claude can log and query health data directly.
 
 ### Register for this project
 
@@ -153,6 +153,7 @@ Add to that project's `.mcp.json`:
 | `ironcompass_query_trend` | Get trend data for any metric |
 | `ironcompass_query_streak` | Get current streak |
 | `ironcompass_delete_metric` | Delete a custom metric entry |
+| `ironcompass_delete_meal` | Delete a meal entry |
 | `ironcompass_delete_workout` | Delete a workout entry |
 
 ### Claude Code skills

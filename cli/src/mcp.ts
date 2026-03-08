@@ -238,6 +238,17 @@ server.registerTool("ironcompass_delete_metric", {
   return textResult({ deleted, dashboard_url: dayUrl(deleted.date) });
 });
 
+server.registerTool("ironcompass_delete_meal", {
+  title: "Delete Meal",
+  description: "Delete a meal by its ID",
+  inputSchema: z.object({
+    id: z.string().uuid().describe("Meal UUID to delete"),
+  }),
+}, async ({ id }) => {
+  const deleted = await deleteRowById("meals", id);
+  return textResult({ deleted, dashboard_url: dayUrl(deleted.date) });
+});
+
 server.registerTool("ironcompass_delete_workout", {
   title: "Delete Workout",
   description: "Delete a workout by its ID",
