@@ -139,6 +139,7 @@ server.registerTool("ironcompass_log_workout", {
     calories: z.number().optional().describe("Calories burned"),
     avg_hr: z.number().optional().describe("Average heart rate"),
     notes: z.string().optional(),
+    details: z.record(z.string(), z.unknown()).optional().describe("Type-specific details (e.g. exercises, scores, power zones)"),
     planned: z.boolean().optional().describe("Was planned"),
     completed: z.boolean().optional().describe("Was completed"),
   }),

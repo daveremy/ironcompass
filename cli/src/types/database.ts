@@ -382,6 +382,7 @@ export type Database = {
           completed: boolean | null
           created_at: string | null
           date: string
+          details: Record<string, unknown> | null
           distance_mi: number | null
           duration_min: number | null
           elevation_ft: number | null
@@ -397,6 +398,7 @@ export type Database = {
           completed?: boolean | null
           created_at?: string | null
           date: string
+          details?: Record<string, unknown> | null
           distance_mi?: number | null
           duration_min?: number | null
           elevation_ft?: number | null
@@ -412,6 +414,7 @@ export type Database = {
           completed?: boolean | null
           created_at?: string | null
           date?: string
+          details?: Record<string, unknown> | null
           distance_mi?: number | null
           duration_min?: number | null
           elevation_ft?: number | null

@@ -39,9 +39,9 @@ Web Dashboard (read-only visualization)
 - blood_pressure: systolic, diastolic, time
 
 ### Workouts
-- date, type (pickleball/strength/hike/golf/run/elliptical/mobility/sauna/other)
+- date, type (pickleball/strength/hike/golf/run/elliptical/mobility/sauna/indoor_cycle/other)
 - duration_min, distance_mi, elevation_ft, calories
-- avg_hr, notes, planned (bool), completed (bool)
+- avg_hr, notes, planned (bool), completed (bool), details (jsonb)
 
 ### Meals
 - date, time, name, description
@@ -118,6 +118,7 @@ The MCP server exposes these as tools Claude can call directly:
 - `ironcompass_log_bodycomp` — log body composition (Hume Body Pod)
 - `ironcompass_log_metric` — log a custom numeric metric
 - `ironcompass_delete_metric` — delete a custom metric entry by ID
+- `ironcompass_delete_workout` — delete a workout by ID
 - `ironcompass_query_today` — get today's summary
 - `ironcompass_query_week` — get weekly summary
 - `ironcompass_query_trend` — get trend data for a metric
@@ -127,7 +128,7 @@ The MCP server exposes these as tools Claude can call directly:
 
 ### Calendar View (primary)
 - Month view, days color-coded by workout type
-- Green=pickleball, Blue=strength, Orange=hike, Purple=golf, Red=run, Gray=rest
+- Green=pickleball, Blue=strength, Orange=hike, Purple=golf, Red=run, Rose=indoor_cycle, Gray=rest
 - Multiple workouts per day shown
 - Click day for full details (meals, metrics, notes)
 

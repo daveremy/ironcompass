@@ -78,6 +78,8 @@ ironcompass log bp --systolic 128 --diastolic 78
 ```bash
 ironcompass log workout --type hike --duration 56 --distance 2.5 --elevation 615 --calories 316 --hr 91
 ironcompass log workout --type strength --duration 30 --notes "Day B: upper body + core"
+ironcompass log workout --type indoor_cycle --duration 45 --calories 380 --hr 142
+ironcompass log workout --type strength --duration 30 --details '{"exercises":[{"name":"bench press","sets":[{"reps":8,"weight":135}]}]}'
 ```
 
 ### Log meals, supplements, and body composition
@@ -105,7 +107,7 @@ All commands return structured JSON.
 
 ## MCP Server
 
-IronCompass exposes 13 tools via [Model Context Protocol](https://modelcontextprotocol.io/) so Claude can log and query health data directly.
+IronCompass exposes 16 tools via [Model Context Protocol](https://modelcontextprotocol.io/) so Claude can log and query health data directly.
 
 ### Register for this project
 
@@ -140,15 +142,18 @@ Add to that project's `.mcp.json`:
 | `ironcompass_log_sleep` | Log sleep scores, hours, CPAP, mouth tape, HRV |
 | `ironcompass_log_fasting` | Log fasting protocol and compliance |
 | `ironcompass_log_bp` | Log blood pressure reading |
-| `ironcompass_log_workout` | Log workout with type, duration, stats |
+| `ironcompass_log_workout` | Log workout with type, duration, stats, details |
 | `ironcompass_log_meal` | Log meal with macros |
 | `ironcompass_log_pullups` | Log pullup count and sets |
 | `ironcompass_log_supplements` | Log supplements taken |
 | `ironcompass_log_bodycomp` | Log body composition (Hume Body Pod) |
+| `ironcompass_log_metric` | Log a custom numeric metric |
 | `ironcompass_query_today` | Get today's full summary |
 | `ironcompass_query_week` | Get weekly summary |
 | `ironcompass_query_trend` | Get trend data for any metric |
 | `ironcompass_query_streak` | Get current streak |
+| `ironcompass_delete_metric` | Delete a custom metric entry |
+| `ironcompass_delete_workout` | Delete a workout entry |
 
 ### Claude Code skills
 
@@ -161,7 +166,7 @@ Optional skills that teach Claude to use IronCompass conversationally. See [`ski
 
 Dark theme, athletic aesthetic. Three main views:
 
-- **Calendar**: Month grid with color-coded workout days (green=pickleball, blue=strength, orange=hike, purple=golf, red=run). Click any day for full details.
+- **Calendar**: Month grid with color-coded workout days (green=pickleball, blue=strength, orange=hike, purple=golf, red=run, rose=indoor_cycle). Click any day for full details.
 - **Metrics**: Weight trend (with configurable goal line), sleep scores, BP trend, streaks, pullup progress, protein intake.
 - **Weekly Summary**: Workouts completed vs planned, averages, deltas, streaks.
 

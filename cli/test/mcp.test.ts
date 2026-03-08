@@ -63,6 +63,9 @@ const EXPECTED_TOOLS = [
   "ironcompass_log_pullups",
   "ironcompass_log_supplements",
   "ironcompass_log_bodycomp",
+  "ironcompass_log_metric",
+  "ironcompass_delete_metric",
+  "ironcompass_delete_workout",
 ];
 
 describe("ironcompass MCP server", () => {
@@ -92,7 +95,7 @@ describe("ironcompass MCP server", () => {
     }
   });
 
-  it("lists all 13 tools with correct schemas", async () => {
+  it("lists all 16 tools with correct schemas", async () => {
     const proc = spawnMcp();
     try {
       const response = await initAndSend(proc, {
@@ -105,8 +108,8 @@ describe("ironcompass MCP server", () => {
       assert.ok(response.result, "Expected result");
       const tools = response.result.tools;
 
-      // All 13 tools present
-      assert.equal(tools.length, 13);
+      // All 16 tools present
+      assert.equal(tools.length, 16);
       const names = tools.map((t: any) => t.name).sort();
       assert.deepEqual(names, [...EXPECTED_TOOLS].sort());
 
@@ -116,10 +119,15 @@ describe("ironcompass MCP server", () => {
       assert.ok(bpRequired.includes("systolic"), "systolic should be required");
       assert.ok(bpRequired.includes("diastolic"), "diastolic should be required");
 
-      // workout type has enum
+      // workout type has enum with indoor_cycle
       const workout = tools.find((t: any) => t.name === "ironcompass_log_workout");
       const typeSchema = workout.inputSchema.properties.type;
       assert.ok(typeSchema.enum || typeSchema.anyOf, "type should have enum values");
+      const enumValues = typeSchema.enum ?? typeSchema.anyOf?.map((v: any) => v.const);
+      assert.ok(enumValues.includes("indoor_cycle"), "indoor_cycle should be in workout type enum");
+
+      // workout schema has details property
+      assert.ok(workout.inputSchema.properties.details, "workout should have details property");
     } finally {
       proc.kill();
     }

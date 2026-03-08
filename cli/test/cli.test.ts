@@ -73,13 +73,13 @@ describe("ironcompass CLI", () => {
     assert.ok(stderr.includes("metric"));
   });
 
-  it("trend with invalid metric fails with valid metric list", () => {
-    const { stderr, exitCode } = run("trend", "bogus");
-    assert.equal(exitCode, 1);
-    const parsed = JSON.parse(stderr);
-    assert.equal(parsed.ok, false);
-    assert.ok(parsed.error.includes("Unknown metric"));
-    assert.ok(parsed.error.includes("weight"));
+  it("trend with unknown metric returns empty custom metric result", () => {
+    const { stdout, exitCode } = run("trend", "bogus");
+    assert.equal(exitCode, 0);
+    const parsed = JSON.parse(stdout);
+    assert.equal(parsed.ok, true);
+    assert.equal(parsed.data.metric, "bogus");
+    assert.equal(parsed.data.summary.count, 0);
   });
 
   it("streak with invalid metric fails with valid streak list", () => {
@@ -138,6 +138,18 @@ describe("ironcompass CLI", () => {
     assert.ok(stdout.includes("--readiness"), "missing --readiness");
     assert.ok(stdout.includes("--avg-hr-sleep"), "missing --avg-hr-sleep");
     assert.ok(stdout.includes("--hrv"), "missing --hrv");
+  });
+
+  // indoor_cycle is a valid workout type
+  it("workout --type indoor_cycle is accepted as valid choice", () => {
+    const { stdout } = run("log", "workout", "--help");
+    assert.ok(stdout.includes("indoor_cycle"), "indoor_cycle should be listed as valid type");
+  });
+
+  // --details option exists
+  it("workout --help shows --details option", () => {
+    const { stdout } = run("log", "workout", "--help");
+    assert.ok(stdout.includes("--details"), "missing --details option");
   });
 
   // empty supplements rejected
