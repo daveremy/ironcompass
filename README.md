@@ -80,6 +80,7 @@ ironcompass log workout --type hike --duration 56 --distance 2.5 --elevation 615
 ironcompass log workout --type strength --duration 30 --notes "Day B: upper body + core"
 ironcompass log workout --type indoor_cycle --duration 45 --calories 380 --hr 142
 ironcompass log workout --type strength --duration 30 --details '{"exercises":[{"name":"bench press","sets":[{"reps":8,"weight":135}]}]}'
+ironcompass log workout --type run --duration 30 --start-time 08:30 --end-time 09:00 --source manual
 ```
 
 ### Log meals, supplements, and body composition
@@ -208,7 +209,7 @@ npm run lint      # ESLint
 cd cli
 npm run build     # Compile TypeScript
 npm run dev       # Watch mode
-npm test          # Run all tests (46 tests)
+npm test          # Run all tests (59 tests)
 npm run typecheck # Type check without emitting
 ```
 

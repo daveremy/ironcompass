@@ -152,6 +152,14 @@ describe("ironcompass CLI", () => {
     assert.ok(stdout.includes("--details"), "missing --details option");
   });
 
+  // --start-time, --end-time, --source options (#32, #33)
+  it("workout --help shows --start-time, --end-time, --source options", () => {
+    const { stdout } = run("log", "workout", "--help");
+    assert.ok(stdout.includes("--start-time"), "missing --start-time option");
+    assert.ok(stdout.includes("--end-time"), "missing --end-time option");
+    assert.ok(stdout.includes("--source"), "missing --source option");
+  });
+
   // empty supplements rejected
   it("log supplements --taken ',' fails with empty list error", () => {
     const { stderr, exitCode } = run("log", "supplements", "--taken", ",");

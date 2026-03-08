@@ -1,5 +1,6 @@
 import type { WorkoutRow } from "@/lib/types";
 import { getWorkoutColor } from "@/lib/types";
+import { formatTime } from "@/lib/date";
 import SectionCard from "./section-card";
 
 function WorkoutTypeBadge({ type }: { type: string }) {
@@ -30,7 +31,15 @@ function WorkoutCard({ workout }: { workout: WorkoutRow }) {
   return (
     <div className="flex flex-col gap-1.5 p-3 rounded-md bg-background/50 border border-border/50">
       <div className="flex items-center gap-2">
+        {workout.start_time && (
+          <span className="text-xs font-mono text-muted">{formatTime(workout.start_time)}</span>
+        )}
         <WorkoutTypeBadge type={workout.type} />
+        {workout.source && (
+          <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-mono text-slate-400 bg-slate-800/50 border border-slate-700/50">
+            {workout.source}
+          </span>
+        )}
         {stats.length > 0 && (
           <span className="text-xs font-mono text-muted">{stats.join(" / ")}</span>
         )}

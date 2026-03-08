@@ -128,9 +128,12 @@ export type Database = {
           distance_mi: number | null
           duration_min: number | null
           elevation_ft: number | null
+          end_time: string | null
           id: string
           notes: string | null
           planned: boolean | null
+          source: string | null
+          start_time: string | null
           type: string
           updated_at: string | null
         }
