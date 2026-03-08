@@ -129,6 +129,11 @@ describe("ironcompass MCP server", () => {
 
       // workout schema has details property
       assert.ok(workout.inputSchema.properties.details, "workout should have details property");
+
+      // workout schema has start_time, end_time, source properties (#32, #33)
+      assert.ok(workout.inputSchema.properties.start_time, "workout should have start_time property");
+      assert.ok(workout.inputSchema.properties.end_time, "workout should have end_time property");
+      assert.ok(workout.inputSchema.properties.source, "workout should have source property");
     } finally {
       proc.kill();
     }

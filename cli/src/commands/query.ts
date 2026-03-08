@@ -17,7 +17,7 @@ export async function fetchDay(date: string) {
     sb.from("sleep").select().eq("date", date).maybeSingle(),
     sb.from("fasting").select().eq("date", date).maybeSingle(),
     sb.from("blood_pressure").select().eq("date", date),
-    sb.from("workouts").select().eq("date", date),
+    sb.from("workouts").select().eq("date", date).order("start_time", { ascending: true, nullsFirst: false }).order("created_at"),
     sb.from("meals").select().eq("date", date),
     sb.from("pullups").select().eq("date", date).maybeSingle(),
     sb.from("supplements").select().eq("date", date).maybeSingle(),
@@ -58,7 +58,7 @@ export async function fetchWeek() {
   const results = await Promise.all([
     sb.from("daily_entries").select().gte("date", start).lte("date", end).order("date"),
     sb.from("sleep").select().gte("date", start).lte("date", end).order("date"),
-    sb.from("workouts").select().gte("date", start).lte("date", end).order("date"),
+    sb.from("workouts").select().gte("date", start).lte("date", end).order("date").order("start_time", { ascending: true, nullsFirst: false }).order("created_at"),
     sb.from("meals").select().gte("date", start).lte("date", end).order("date"),
     sb.from("fasting").select().gte("date", start).lte("date", end).order("date"),
     sb.from("pullups").select().gte("date", start).lte("date", end).order("date"),

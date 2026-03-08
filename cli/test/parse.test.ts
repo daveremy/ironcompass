@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { parseJsonObject } from "../dist/lib/parse.js";
+import { parseJsonObject, parseTimestamp } from "../dist/lib/parse.js";
 
 describe("parseJsonObject", () => {
   it("parses a valid JSON object", () => {
@@ -25,5 +25,26 @@ describe("parseJsonObject", () => {
 
   it("throws on null", () => {
     assert.throws(() => parseJsonObject("null"), /JSON object/);
+  });
+});
+
+describe("parseTimestamp", () => {
+  it("converts HH:MM to ISO 8601 with date and local timezone offset", () => {
+    const result = parseTimestamp("2026-03-07", "08:30");
+    assert.match(result, /^2026-03-07T08:30:00[+-]\d{2}:\d{2}$/);
+  });
+
+  it("supports single-digit hours", () => {
+    const result = parseTimestamp("2026-03-07", "8:30");
+    assert.match(result, /^2026-03-07T08:30:00[+-]\d{2}:\d{2}$/);
+  });
+
+  it("passes through an ISO 8601 string unchanged", () => {
+    const iso = "2026-03-07T08:30:00-08:00";
+    assert.equal(parseTimestamp("2026-03-07", iso), iso);
+  });
+
+  it("passes through non-HH:MM strings unchanged", () => {
+    assert.equal(parseTimestamp("2026-03-07", "2026-03-07T14:00:00Z"), "2026-03-07T14:00:00Z");
   });
 });

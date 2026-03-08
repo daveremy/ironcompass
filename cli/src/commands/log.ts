@@ -2,7 +2,7 @@ import { Command, Option } from "commander";
 import { fail, success } from "../output.js";
 import { upsertRow, insertRow } from "../db.js";
 import { ensureDailyEntry } from "../lib/ensure-daily-entry.js";
-import { parseNum, parseList, parseJsonObject, sparse } from "../lib/parse.js";
+import { parseNum, parseList, parseJsonObject, parseTimestamp, sparse } from "../lib/parse.js";
 import { todayDate } from "../lib/date.js";
 
 export const WORKOUT_TYPES = [
@@ -33,9 +33,15 @@ export async function logBp(date: string, systolic: number, diastolic: number, f
   return insertRow("blood_pressure", { date, systolic, diastolic, ...sparse(fields) });
 }
 
-export async function logWorkout(date: string, type: WorkoutType, fields: { duration_min?: number; distance_mi?: number; elevation_ft?: number; calories?: number; avg_hr?: number; notes?: string; planned?: boolean; completed?: boolean; details?: Record<string, unknown> } = {}) {
+export async function logWorkout(date: string, type: WorkoutType, fields: { duration_min?: number; distance_mi?: number; elevation_ft?: number; calories?: number; avg_hr?: number; notes?: string; planned?: boolean; completed?: boolean; details?: Record<string, unknown>; start_time?: string; end_time?: string; source?: string } = {}) {
   await ensureDailyEntry(date);
-  return insertRow("workouts", { date, type, ...sparse(fields) });
+  const normalized = {
+    ...fields,
+    start_time: fields.start_time ? parseTimestamp(date, fields.start_time) : undefined,
+    end_time: fields.end_time ? parseTimestamp(date, fields.end_time) : undefined,
+    source: fields.source ?? "manual",
+  };
+  return insertRow("workouts", { date, type, ...sparse(normalized) });
 }
 
 export async function logMeal(date: string, name: string, fields: { time?: string; description?: string; protein_g?: number; fat_g?: number; carbs_g?: number; calories?: number; notes?: string } = {}) {
@@ -176,6 +182,9 @@ export function registerLogCommands(program: Command): void {
     .option("--hr <bpm>", "Average heart rate")
     .option("--notes <text>", "Notes")
     .option("--details <json>", "Type-specific details as JSON object")
+    .option("--start-time <time>", "Start time — HH:MM or ISO 8601")
+    .option("--end-time <time>", "End time — HH:MM or ISO 8601")
+    .option("--source <source>", "Data source (default: manual)")
     .option("--planned", "Was planned")
     .option("--no-planned", "Was not planned")
     .option("--completed", "Was completed")
@@ -190,6 +199,9 @@ export function registerLogCommands(program: Command): void {
           avg_hr: parseNum("hr", opts.hr),
           notes: opts.notes as string | undefined,
           details: opts.details !== undefined ? parseJsonObject(opts.details as string) : undefined,
+          start_time: opts.startTime as string | undefined,
+          end_time: opts.endTime as string | undefined,
+          source: opts.source as string | undefined,
           planned: opts.planned as boolean | undefined,
           completed: opts.completed as boolean | undefined,
         });

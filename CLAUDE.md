@@ -42,6 +42,7 @@ Web Dashboard (read-only visualization)
 - date, type (pickleball/strength/hike/golf/run/elliptical/mobility/sauna/indoor_cycle/other)
 - duration_min, distance_mi, elevation_ft, calories
 - avg_hr, notes, planned (bool), completed (bool), details (jsonb)
+- start_time (timestamptz), end_time (timestamptz), source (text)
 
 ### Meals
 - date, time, name, description
@@ -75,6 +76,7 @@ ironcompass log bp --systolic 128 --diastolic 78
 # Workouts
 ironcompass log workout --type hike --duration 56 --distance 2.5 --elevation 615 --calories 316 --hr 91
 ironcompass log workout --type strength --duration 30 --notes "Day B: upper body + core"
+ironcompass log workout --type run --duration 30 --start-time 08:30 --end-time 09:00 --source manual
 
 # Meals
 ironcompass log meal --name "salmon dinner" --protein 34 --fat 12 --carbs 25 --calories 340

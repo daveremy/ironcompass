@@ -44,7 +44,7 @@ export async function fetchDayData(date: string): Promise<DayData> {
     supabase.from("daily_entries").select("*").eq("date", date).maybeSingle(),
     supabase.from("sleep").select("*").eq("date", date).maybeSingle(),
     supabase.from("fasting").select("*").eq("date", date).maybeSingle(),
-    supabase.from("workouts").select("*").eq("date", date).order("created_at"),
+    supabase.from("workouts").select("*").eq("date", date).order("start_time", { ascending: true, nullsFirst: false }).order("created_at"),
     supabase.from("meals").select("*").eq("date", date).order("time"),
     supabase.from("blood_pressure").select("*").eq("date", date).order("time"),
     supabase.from("pullups").select("*").eq("date", date).maybeSingle(),

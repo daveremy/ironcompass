@@ -20,6 +20,22 @@ export function parseJsonObject(raw: string): Record<string, unknown> {
   return parsed as Record<string, unknown>;
 }
 
+export function parseTimestamp(date: string, raw: string): string {
+  if (/^\d{1,2}:\d{2}$/.test(raw)) {
+    const pad = raw.length === 4 ? `0${raw}` : raw;
+    // Use the actual date+time to get the correct offset (handles DST transitions)
+    const [y, mo, d] = date.split("-").map(Number);
+    const [h, mi] = pad.split(":").map(Number);
+    const local = new Date(y, mo - 1, d, h, mi);
+    const offset = local.toTimeString().match(/([+-]\d{4})/)?.[1] ?? "+0000";
+    const sign = offset[0];
+    const hh = offset.slice(1, 3);
+    const mm = offset.slice(3, 5);
+    return `${date}T${pad}:00${sign}${hh}:${mm}`;
+  }
+  return raw;
+}
+
 export function sparse<T extends Record<string, unknown>>(obj: T): Partial<T> {
   return Object.fromEntries(
     Object.entries(obj).filter(([, v]) => v !== undefined)
