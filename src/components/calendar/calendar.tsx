@@ -3,17 +3,18 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import type { WorkoutRow } from "@/lib/types";
-import { getMonday, formatDate, addDays, isSameDay, parseDate } from "@/lib/date";
+import { fetchWeekSummaries } from "@/lib/queries";
+import type { WorkoutRow, WeekSummary } from "@/lib/types";
+import { getMonday, formatDate, addDays, isSameDay, parseDate, SHORT_DAYS } from "@/lib/date";
 import CalendarHeader from "./calendar-header";
 import CalendarDay from "./calendar-day";
-
-const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+import CalendarWeekSummary from "./calendar-week-summary";
 
 export default function Calendar({ initialMonth }: { initialMonth?: string } = {}) {
   const router = useRouter();
   const [currentMonth, setCurrentMonth] = useState<Date | null>(null);
   const [workouts, setWorkouts] = useState<WorkoutRow[]>([]);
+  const [weekSummaries, setWeekSummaries] = useState<Map<string, WeekSummary>>(new Map());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,7 +29,7 @@ export default function Calendar({ initialMonth }: { initialMonth?: string } = {
     }
   }, [initialMonth]);
 
-  const fetchWorkouts = useCallback(
+  const fetchData = useCallback(
     async (month: Date, signal: AbortSignal) => {
       setLoading(true);
       setError(null);
@@ -36,22 +37,42 @@ export default function Calendar({ initialMonth }: { initialMonth?: string } = {
       const firstOfMonth = new Date(month.getFullYear(), month.getMonth(), 1);
       const gridStart = getMonday(firstOfMonth);
       const gridEnd = addDays(gridStart, 41);
+      const gridStartStr = formatDate(gridStart);
+      const gridEndStr = formatDate(gridEnd);
 
-      const { data, error: fetchError } = await supabase
-        .from("workouts")
-        .select("*")
-        .gte("date", formatDate(gridStart))
-        .lte("date", formatDate(gridEnd))
-        .order("date");
+      const [workoutsResult, summariesResult] = await Promise.allSettled([
+        supabase
+          .from("workouts")
+          .select("*")
+          .gte("date", gridStartStr)
+          .lte("date", gridEndStr)
+          .order("date"),
+        fetchWeekSummaries(gridStartStr, gridEndStr),
+      ]);
 
       if (signal.aborted) return;
 
-      if (fetchError) {
-        setError(fetchError.message);
-        setWorkouts([]);
+      // Workouts
+      if (workoutsResult.status === "fulfilled") {
+        const { data, error: fetchError } = workoutsResult.value;
+        if (fetchError) {
+          setError(fetchError.message);
+          setWorkouts([]);
+        } else {
+          setWorkouts(data ?? []);
+        }
       } else {
-        setWorkouts(data ?? []);
+        setError("Failed to fetch workouts");
+        setWorkouts([]);
       }
+
+      // Week summaries — independent, don't block calendar
+      if (summariesResult.status === "fulfilled") {
+        setWeekSummaries(summariesResult.value);
+      } else {
+        setWeekSummaries(new Map());
+      }
+
       setLoading(false);
     },
     []
@@ -67,9 +88,9 @@ export default function Calendar({ initialMonth }: { initialMonth?: string } = {
       window.history.replaceState(window.history.state, "", url.toString());
     }
     const controller = new AbortController();
-    fetchWorkouts(currentMonth, controller.signal);
+    fetchData(currentMonth, controller.signal);
     return () => controller.abort();
-  }, [currentMonth, fetchWorkouts]);
+  }, [currentMonth, fetchData]);
 
   const gridStart = useMemo(() => {
     if (!currentMonth) return null;
@@ -96,6 +117,12 @@ export default function Calendar({ initialMonth }: { initialMonth?: string } = {
 
   if (!currentMonth) {
     return <LoadingSkeleton />;
+  }
+
+  // Build rows of 7 days + 1 summary
+  const rows: Date[][] = [];
+  for (let i = 0; i < 42; i += 7) {
+    rows.push(cells.slice(i, i + 7));
   }
 
   return (
@@ -125,8 +152,8 @@ export default function Calendar({ initialMonth }: { initialMonth?: string } = {
       )}
 
       {/* Day-of-week labels */}
-      <div className="grid grid-cols-7 mb-1">
-        {DAY_LABELS.map((label) => (
+      <div className="grid grid-cols-7 sm:grid-cols-[repeat(7,1fr)_4rem] mb-1">
+        {SHORT_DAYS.map((label) => (
           <div
             key={label}
             className="text-center text-[10px] font-mono font-medium tracking-widest uppercase text-muted py-2"
@@ -134,39 +161,57 @@ export default function Calendar({ initialMonth }: { initialMonth?: string } = {
             {label}
           </div>
         ))}
+        <div className="hidden sm:block text-center text-[10px] font-mono font-medium tracking-widest uppercase text-muted py-2">
+          WK
+        </div>
       </div>
 
       {/* Calendar grid */}
-      <div className="grid grid-cols-7 gap-px rounded-lg overflow-hidden border border-border bg-border">
+      <div className="grid grid-cols-7 sm:grid-cols-[repeat(7,1fr)_4rem] gap-px rounded-lg overflow-hidden border border-border bg-border">
         {loading ? (
-          Array.from({ length: 42 }).map((_, i) => (
+          Array.from({ length: 48 }).map((_, i) => (
             <div
               key={i}
-              className="skeleton min-h-[3.5rem] sm:min-h-[4.5rem]"
-              style={{ animationDelay: `${(i % 7) * 50}ms` }}
+              className={`skeleton min-h-[3.5rem] sm:min-h-[4.5rem] ${i % 8 === 7 ? "hidden sm:block" : ""}`}
+              style={{ animationDelay: `${(i % 8) * 50}ms` }}
             />
           ))
         ) : (
-          cells.map((date, i) => {
-            const key = formatDate(date);
-            const dayWorkouts = workoutsByDate.get(key) ?? [];
-            return (
+          rows.map((week, rowIndex) => {
+            const mondayStr = formatDate(week[0]);
+            const summary = weekSummaries.get(mondayStr);
+            return [
+              ...week.map((date, dayIndex) => {
+                const key = formatDate(date);
+                const dayWorkouts = workoutsByDate.get(key) ?? [];
+                return (
+                  <div
+                    key={key}
+                    className="bg-surface"
+                    style={{
+                      animation: `cell-in 0.2s ease-out ${dayIndex * 30}ms both`,
+                    }}
+                  >
+                    <CalendarDay
+                      date={date}
+                      workouts={dayWorkouts}
+                      isCurrentMonth={date.getMonth() === currentMonth.getMonth()}
+                      isToday={isSameDay(date, today)}
+                      onClick={() => router.push(`/?view=daily&date=${key}&month=${formatDate(currentMonth)}`)}
+                    />
+                  </div>
+                );
+              }),
               <div
-                key={key}
-                className="bg-surface"
+                key={`wk-${rowIndex}`}
+                className="hidden sm:block bg-surface"
                 style={{
-                  animation: `cell-in 0.2s ease-out ${(i % 7) * 30}ms both`,
+                  animation: `cell-in 0.2s ease-out 210ms both`,
                 }}
               >
-                <CalendarDay
-                  date={date}
-                  workouts={dayWorkouts}
-                  isCurrentMonth={date.getMonth() === currentMonth.getMonth()}
-                  isToday={isSameDay(date, today)}
-                  onClick={() => router.push(`/?view=daily&date=${key}&month=${formatDate(currentMonth)}`)}
-                />
-              </div>
-            );
+                <CalendarWeekSummary monday={mondayStr} month={formatDate(currentMonth)} summary={summary} />
+              </div>,
+            ];
           })
         )}
       </div>
@@ -185,12 +230,12 @@ function LoadingSkeleton() {
           <div className="skeleton h-9 w-9 rounded" />
         </div>
       </div>
-      <div className="grid grid-cols-7 gap-px rounded-lg overflow-hidden border border-border bg-border">
-        {Array.from({ length: 42 }).map((_, i) => (
+      <div className="grid grid-cols-7 sm:grid-cols-[repeat(7,1fr)_4rem] gap-px rounded-lg overflow-hidden border border-border bg-border">
+        {Array.from({ length: 48 }).map((_, i) => (
           <div
             key={i}
-            className="skeleton min-h-[3.5rem] sm:min-h-[4.5rem]"
-            style={{ animationDelay: `${(i % 7) * 50}ms` }}
+            className={`skeleton min-h-[3.5rem] sm:min-h-[4.5rem] ${i % 8 === 7 ? "hidden sm:block" : ""}`}
+            style={{ animationDelay: `${(i % 8) * 50}ms` }}
           />
         ))}
       </div>

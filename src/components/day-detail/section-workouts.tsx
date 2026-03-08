@@ -1,23 +1,7 @@
 import type { WorkoutRow } from "@/lib/types";
-import { getWorkoutColor } from "@/lib/types";
 import { formatTime } from "@/lib/date";
 import SectionCard from "./section-card";
-
-function WorkoutTypeBadge({ type }: { type: string }) {
-  const color = getWorkoutColor(type);
-  return (
-    <span
-      className="inline-block px-2 py-0.5 rounded text-[10px] font-mono font-semibold uppercase tracking-wider"
-      style={{
-        color,
-        backgroundColor: `${color}15`,
-        border: `1px solid ${color}40`,
-      }}
-    >
-      {type}
-    </span>
-  );
-}
+import WorkoutTypeBadge from "@/components/ui/workout-type-badge";
 
 function WorkoutCard({ workout }: { workout: WorkoutRow }) {
   const stats = [

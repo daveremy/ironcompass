@@ -1,16 +1,19 @@
 import { supabase } from "./supabase";
-import { formatDate, addDays } from "./date";
+import { formatDate, addDays, getMonday } from "./date";
 import type {
   BloodPressureRow,
   BodyCompositionRow,
   CustomMetricRow,
   DailyEntryRow,
+  DaySummary,
   FastingRow,
   MealRow,
   PullupsRow,
   SleepRow,
   SupplementsRow,
   WorkoutRow,
+  WeekData,
+  WeekSummary,
 } from "./types";
 
 // ─── Day Data ────────────────────────────────────────────
@@ -285,5 +288,222 @@ export async function fetchStreak(metric: string): Promise<StreakResult> {
 
   const startDate = count > 0 ? daysAgoDate(count - 1) : null;
   return { metric, current_streak: count, start_date: startDate };
+}
+
+// ─── Weekly Data ──────────────────────────────────────────
+
+export async function fetchWeekData(startDate: string): Promise<WeekData> {
+  const start = startDate;
+  const end = formatDate(addDays(new Date(start + "T00:00:00"), 6));
+
+  const [dailyRes, sleepRes, workoutsRes, mealsRes, fastingRes, pullupsRes] =
+    await Promise.all([
+      supabase.from("daily_entries").select("*").gte("date", start).lte("date", end).order("date"),
+      supabase.from("sleep").select("*").gte("date", start).lte("date", end).order("date"),
+      supabase.from("workouts").select("*").gte("date", start).lte("date", end).order("date").order("start_time", { ascending: true, nullsFirst: false }),
+      supabase.from("meals").select("*").gte("date", start).lte("date", end).order("date"),
+      supabase.from("fasting").select("*").gte("date", start).lte("date", end).order("date"),
+      supabase.from("pullups").select("*").gte("date", start).lte("date", end).order("date"),
+    ]);
+
+  const errors = [dailyRes, sleepRes, workoutsRes, mealsRes, fastingRes, pullupsRes]
+    .filter((r) => r.error)
+    .map((r) => r.error!.message);
+  if (errors.length > 0) throw new Error(`Failed to fetch week data: ${errors.join("; ")}`);
+
+  const daily = (dailyRes.data ?? []) as DailyEntryRow[];
+  const sleep = (sleepRes.data ?? []) as SleepRow[];
+  const workouts = (workoutsRes.data ?? []) as WorkoutRow[];
+  const meals = (mealsRes.data ?? []) as MealRow[];
+  const fasting = (fastingRes.data ?? []) as FastingRow[];
+  const pullups = (pullupsRes.data ?? []) as PullupsRow[];
+
+  // Index by date
+  const dailyByDate = new Map(daily.map((d) => [d.date, d]));
+  const sleepByDate = new Map(sleep.map((s) => [s.date, s]));
+  const fastingByDate = new Map(fasting.map((f) => [f.date, f]));
+  const pullupsByDate = new Map(pullups.map((p) => [p.date, p]));
+
+  const workoutsByDate = new Map<string, WorkoutRow[]>();
+  for (const w of workouts) {
+    const arr = workoutsByDate.get(w.date);
+    if (arr) arr.push(w); else workoutsByDate.set(w.date, [w]);
+  }
+
+  const mealTotalsByDate = new Map<string, { protein: number; calories: number }>();
+  for (const m of meals) {
+    let t = mealTotalsByDate.get(m.date);
+    if (!t) { t = { protein: 0, calories: 0 }; mealTotalsByDate.set(m.date, t); }
+    t.protein += m.protein_g ?? 0;
+    t.calories += m.calories ?? 0;
+  }
+
+  // Build per-day summaries
+  const days: DaySummary[] = [];
+  const startD = new Date(start + "T00:00:00");
+  for (let i = 0; i < 7; i++) {
+    const dateStr = formatDate(addDays(startD, i));
+    const d = dailyByDate.get(dateStr);
+    const s = sleepByDate.get(dateStr);
+    const f = fastingByDate.get(dateStr);
+    const p = pullupsByDate.get(dateStr);
+    const mt = mealTotalsByDate.get(dateStr);
+    days.push({
+      date: dateStr,
+      weight: d?.weight ?? null,
+      energy: d?.energy ?? null,
+      alcohol: d?.alcohol ?? null,
+      sleepHours: s?.hours ?? null,
+      ouraScore: s?.oura_score ?? null,
+      appleScore: s?.apple_score ?? null,
+      workouts: workoutsByDate.get(dateStr) ?? [],
+      totalProtein: mt ? mt.protein : null,
+      totalCalories: mt ? mt.calories : null,
+      fastingCompliant: f?.compliant ?? null,
+      pullups: p?.total_count ?? null,
+    });
+  }
+
+  // Summary aggregations
+  const weightValues: number[] = [];
+  let daysWith = 0;
+  let daysWithout = 0;
+  for (const d of daily) {
+    if (d.weight != null) weightValues.push(d.weight);
+    if (d.alcohol === true) daysWith++;
+    else if (d.alcohol === false) daysWithout++;
+  }
+  const weightFirst = weightValues.length > 0 ? weightValues[0] : null;
+  const weightLast = weightValues.length > 0 ? weightValues[weightValues.length - 1] : null;
+  const weightDelta = weightFirst != null && weightLast != null && weightValues.length >= 2 ? weightLast - weightFirst : null;
+
+  const sleepHours: number[] = [];
+  const ouraScores: number[] = [];
+  const appleScores: number[] = [];
+  for (const s of sleep) {
+    if (s.hours != null) sleepHours.push(s.hours);
+    if (s.oura_score != null) ouraScores.push(s.oura_score);
+    if (s.apple_score != null) appleScores.push(s.apple_score);
+  }
+
+  const workoutTypes = [...new Set(workouts.map((w) => w.type))];
+  const fastingCompliant = fasting.filter((f) => f.compliant === true).length;
+  const pullupTotal = pullups.reduce((sum, p) => sum + p.total_count, 0);
+  const mealDays = [...mealTotalsByDate.values()];
+
+  const allDates = new Set([
+    ...daily.map((d) => d.date), ...sleep.map((s) => s.date),
+    ...workouts.map((w) => w.date), ...meals.map((m) => m.date),
+    ...fasting.map((f) => f.date), ...pullups.map((p) => p.date),
+  ]);
+
+  return {
+    start,
+    end,
+    days,
+    summary: {
+      daysLogged: allDates.size,
+      weight: { first: weightFirst, last: weightLast, delta: weightDelta },
+      sleep: { avgHours: avg(sleepHours), avgOura: avg(ouraScores), avgApple: avg(appleScores) },
+      workouts: { total: workouts.length, types: workoutTypes },
+      meals: {
+        avgDailyProtein: mealDays.length > 0 ? avg(mealDays.map((d) => d.protein)) : null,
+        avgDailyCalories: mealDays.length > 0 ? avg(mealDays.map((d) => d.calories)) : null,
+      },
+      fasting: { compliantDays: fastingCompliant, totalDays: fasting.length },
+      alcohol: { daysWith, daysWithout },
+      pullups: { total: pullupTotal, days: pullups.length },
+    },
+  };
+}
+
+export async function fetchWeekSummaries(
+  gridStart: string,
+  gridEnd: string,
+): Promise<Map<string, WeekSummary>> {
+  const [workoutsRes, sleepRes, dailyRes, fastingRes] = await Promise.all([
+    supabase.from("workouts").select("*").gte("date", gridStart).lte("date", gridEnd),
+    supabase.from("sleep").select("*").gte("date", gridStart).lte("date", gridEnd),
+    supabase.from("daily_entries").select("*").gte("date", gridStart).lte("date", gridEnd).order("date"),
+    supabase.from("fasting").select("*").gte("date", gridStart).lte("date", gridEnd),
+  ]);
+
+  // If any query fails, return empty map (calendar still works)
+  if (workoutsRes.error || sleepRes.error || dailyRes.error || fastingRes.error) {
+    return new Map();
+  }
+
+  const workouts = (workoutsRes.data ?? []) as WorkoutRow[];
+  const sleep = (sleepRes.data ?? []) as SleepRow[];
+  const daily = (dailyRes.data ?? []) as DailyEntryRow[];
+  const fasting = (fastingRes.data ?? []) as FastingRow[];
+
+  // Helper: get Monday for a date string (cached)
+  const mondayCache = new Map<string, string>();
+  function mondayOf(dateStr: string): string {
+    let mon = mondayCache.get(dateStr);
+    if (!mon) {
+      mon = formatDate(getMonday(new Date(dateStr + "T00:00:00")));
+      mondayCache.set(dateStr, mon);
+    }
+    return mon;
+  }
+
+  const summaries = new Map<string, WeekSummary>();
+
+  function ensure(monday: string): WeekSummary {
+    let s = summaries.get(monday);
+    if (!s) {
+      s = { workoutCount: 0, avgSleepHours: null, weightDelta: null, fastingCompliant: 0, fastingTotal: 0 };
+      summaries.set(monday, s);
+    }
+    return s;
+  }
+
+  // Workouts
+  for (const w of workouts) {
+    ensure(mondayOf(w.date)).workoutCount++;
+  }
+
+  // Sleep — group hours by week for averaging
+  const sleepByWeek = new Map<string, number[]>();
+  for (const s of sleep) {
+    const mon = mondayOf(s.date);
+    if (s.hours != null) {
+      const arr = sleepByWeek.get(mon);
+      if (arr) arr.push(s.hours);
+      else sleepByWeek.set(mon, [s.hours]);
+    }
+    ensure(mon); // ensure week exists
+  }
+  for (const [mon, hours] of sleepByWeek) {
+    ensure(mon).avgSleepHours = avg(hours);
+  }
+
+  // Weight — first and last per week
+  const weightByWeek = new Map<string, number[]>();
+  for (const d of daily) {
+    if (d.weight != null) {
+      const mon = mondayOf(d.date);
+      const arr = weightByWeek.get(mon);
+      if (arr) arr.push(d.weight);
+      else weightByWeek.set(mon, [d.weight]);
+    }
+  }
+  for (const [mon, weights] of weightByWeek) {
+    if (weights.length >= 2) {
+      ensure(mon).weightDelta = weights[weights.length - 1] - weights[0];
+    }
+  }
+
+  // Fasting
+  for (const f of fasting) {
+    const mon = mondayOf(f.date);
+    const s = ensure(mon);
+    s.fastingTotal++;
+    if (f.compliant === true) s.fastingCompliant++;
+  }
+
+  return summaries;
 }
 
