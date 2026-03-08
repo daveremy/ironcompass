@@ -70,6 +70,7 @@ Source integrations (Apple Health, Oura, Hevy, Strava) live in LifeOS, not IronC
 | #37 | Deduplicate WorkoutType and Database types across CLI and web | todo |
 | #38 | Add `delete_meal` MCP tool | todo |
 | #39 | Make workout types table-driven instead of hardcoded | todo |
+| #40 | Structured workout details rendering (generic + type-specific renderers, maps for hike/run) | todo |
 
 ## Future Ideas
 - Apple Shortcuts for quick logging from iPhone
