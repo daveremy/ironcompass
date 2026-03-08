@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import SectionCard from "@/components/day-detail/section-card";
 import { Stat } from "@/components/day-detail/section-vitals";
 import Sparkline from "./sparkline";
+import ChartContainer from "./chart-container";
 import { formatNumber } from "@/lib/format";
 import type { TrendSummary } from "@/lib/queries";
 
@@ -35,18 +36,20 @@ export default function BPCard({ points, summaries }: BPCardProps) {
     <SectionCard title="Blood Pressure" accent="#ef4444" empty={empty}>
       {!empty && (
         <>
-          <div className="h-20 mb-3 relative">
-            {sysPoints.length > 0 && (
-              <div className="absolute inset-0">
-                <Sparkline points={sysPoints} color="#ef4444" fill={false} />
-              </div>
-            )}
-            {diaPoints.length > 0 && (
-              <div className="absolute inset-0">
-                <Sparkline points={diaPoints} color="#3b82f6" fill={false} />
-              </div>
-            )}
-          </div>
+          <ChartContainer points={points.map((p) => ({ date: p.date, value: p.systolic ?? p.diastolic ?? 0 }))}>
+            <div className="h-full relative">
+              {sysPoints.length > 0 && (
+                <div className="absolute inset-0">
+                  <Sparkline points={sysPoints} color="#ef4444" fill={false} />
+                </div>
+              )}
+              {diaPoints.length > 0 && (
+                <div className="absolute inset-0">
+                  <Sparkline points={diaPoints} color="#3b82f6" fill={false} />
+                </div>
+              )}
+            </div>
+          </ChartContainer>
           <div className="flex gap-3 mb-2">
             <div className="flex items-center gap-1.5">
               <div className="w-2 h-0.5 bg-[#ef4444] rounded" />

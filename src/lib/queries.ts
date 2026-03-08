@@ -242,11 +242,12 @@ interface StreakConfig {
   table: TableName;
   select: string;
   pass: (row: any) => boolean;
+  logged: (row: any) => boolean;
 }
 
 const STREAK_MAP: Record<string, StreakConfig> = {
-  "alcohol-free": { table: "daily_entries", select: "date, alcohol", pass: (r) => r.alcohol === false },
-  fasting: { table: "fasting", select: "date, compliant", pass: (r) => r.compliant === true },
+  "alcohol-free": { table: "daily_entries", select: "date, alcohol", pass: (r) => r.alcohol === false, logged: (r) => r.alcohol != null },
+  fasting: { table: "fasting", select: "date, compliant", pass: (r) => r.compliant === true, logged: (r) => r.compliant != null },
 };
 
 export interface StreakResult {
@@ -278,7 +279,12 @@ export async function fetchStreak(metric: string): Promise<StreakResult> {
   }
 
   let count = 0;
-  for (let i = 0; ; i++) {
+  let offset = 0;
+  // Skip today if not yet logged (no row, or relevant field still null)
+  const todayRow = rowsByDate.get(daysAgoDate(0));
+  if (!todayRow || !cfg.logged(todayRow)) offset = 1;
+
+  for (let i = offset; ; i++) {
     const d = daysAgoDate(i);
     if (d < rangeStart) break;
     const row = rowsByDate.get(d);
@@ -286,7 +292,7 @@ export async function fetchStreak(metric: string): Promise<StreakResult> {
     else break;
   }
 
-  const startDate = count > 0 ? daysAgoDate(count - 1) : null;
+  const startDate = count > 0 ? daysAgoDate(count + offset - 1) : null;
   return { metric, current_streak: count, start_date: startDate };
 }
 

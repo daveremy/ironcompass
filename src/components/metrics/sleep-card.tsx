@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import SectionCard from "@/components/day-detail/section-card";
 import { Stat } from "@/components/day-detail/section-vitals";
 import Sparkline from "./sparkline";
+import ChartContainer from "./chart-container";
 import { formatNumber } from "@/lib/format";
 import type { TrendSummary } from "@/lib/queries";
 
@@ -36,18 +37,20 @@ export default function SleepCard({ points, summaries }: SleepCardProps) {
     <SectionCard title="Sleep" accent="#a855f7" empty={empty}>
       {!empty && (
         <>
-          <div className="h-20 mb-3 relative">
-            {ouraPoints.length > 0 && (
-              <div className="absolute inset-0">
-                <Sparkline points={ouraPoints} color="#a855f7" fill={false} />
-              </div>
-            )}
-            {applePoints.length > 0 && (
-              <div className="absolute inset-0">
-                <Sparkline points={applePoints} color="#3b82f6" fill={false} />
-              </div>
-            )}
-          </div>
+          <ChartContainer points={points.map((p) => ({ date: p.date, value: p.oura_score ?? p.apple_score ?? 0 }))}>
+            <div className="h-full relative">
+              {ouraPoints.length > 0 && (
+                <div className="absolute inset-0">
+                  <Sparkline points={ouraPoints} color="#a855f7" fill={false} />
+                </div>
+              )}
+              {applePoints.length > 0 && (
+                <div className="absolute inset-0">
+                  <Sparkline points={applePoints} color="#3b82f6" fill={false} />
+                </div>
+              )}
+            </div>
+          </ChartContainer>
           <div className="flex gap-3 mb-2">
             {ouraPoints.length > 0 && (
               <div className="flex items-center gap-1.5">
