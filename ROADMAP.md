@@ -68,7 +68,7 @@ Source integrations (Apple Health, Oura, Hevy, Strava) live in LifeOS, not IronC
 | #34 | Add `indoor_cycle` workout type | **done** |
 | #35 | Add `details` JSONB column to workouts for type-specific data (strength sets, golf scores, etc.) | **done** |
 | #37 | Deduplicate WorkoutType and Database types across CLI and web | todo |
-| #38 | Add `delete_meal` MCP tool | todo |
+| #38 | Add `delete_meal` MCP tool | **done** |
 | #39 | Make workout types table-driven instead of hardcoded | todo |
 | #40 | Structured workout details rendering (generic + type-specific renderers, maps for hike/run) | todo |
 
