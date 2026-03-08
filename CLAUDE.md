@@ -134,6 +134,13 @@ The MCP server exposes these as tools Claude can call directly:
 - Green=pickleball, Blue=strength, Orange=hike, Purple=golf, Red=run, Rose=indoor_cycle, Gray=rest
 - Multiple workouts per day shown
 - Click day for full details (meals, metrics, notes)
+- 8th column (WK) shows weekly summaries: workout count, sleep hours, weight delta, fasting ratio
+- Click WK column to navigate to dedicated weekly view
+
+### Weekly View
+- Dedicated `?view=weekly&date=<monday>` view with prev/next week navigation
+- Sections: Overview (days logged, weight delta, alcohol), Sleep (avg hours/oura/apple), Workouts (count + type badges + list), Nutrition (avg daily protein/calories), Fasting (compliant days), Pullups (total + active days)
+- URL auto-syncs to Monday of selected week for deep-linking
 
 ### Metrics Dashboard
 - Weight trend line (configurable goal line)
@@ -143,13 +150,6 @@ The MCP server exposes these as tools Claude can call directly:
 - Pullup daily count + trend
 - Blood pressure trend
 - Protein intake vs target
-
-### Weekly Summary
-- Workouts completed vs planned
-- Average sleep score
-- Weight delta
-- Macro averages
-- Streaks
 
 ## Design Direction
 Athletic, bold, dark theme. Think Strava meets a fighter pilot's HUD. Not clinical — motivating. The design should make you want to fill in the data because it looks good when you do.

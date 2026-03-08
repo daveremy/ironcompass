@@ -3,6 +3,7 @@ import type { ViewType } from "@/lib/types";
 
 const NAV_ITEMS: { label: string; href: string; views: ViewType[] }[] = [
   { label: "Calendar", href: "/", views: ["calendar", "daily"] },
+  { label: "Weekly", href: "/?view=weekly", views: ["weekly"] },
   { label: "Metrics", href: "/?view=metrics", views: ["metrics"] },
 ];
 
@@ -35,9 +36,6 @@ export default function Shell({ children, currentView = "calendar" }: { children
                 </Link>
               );
             })}
-            <span className="px-3 py-1.5 text-xs font-mono tracking-wider uppercase text-muted cursor-not-allowed">
-              Weekly
-            </span>
           </nav>
         </div>
       </header>

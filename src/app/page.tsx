@@ -2,6 +2,7 @@ import Shell from "@/components/layout/shell";
 import Calendar from "@/components/calendar/calendar";
 import DayDetail from "@/components/day-detail/day-detail";
 import MetricsDashboard from "@/components/metrics/metrics-dashboard";
+import WeeklyView from "@/components/weekly/weekly-view";
 import type { ViewType } from "@/lib/types";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -25,12 +26,15 @@ export default async function Home({
 
   const currentView: ViewType =
     view === "metrics" ? "metrics" :
+    view === "weekly" ? "weekly" :
     view === "daily" ? "daily" : "calendar";
 
   return (
     <Shell currentView={currentView}>
       {currentView === "metrics" ? (
         <MetricsDashboard />
+      ) : currentView === "weekly" ? (
+        <WeeklyView date={date} backMonth={month} />
       ) : currentView === "daily" && date ? (
         <DayDetail date={date} backMonth={month} />
       ) : (

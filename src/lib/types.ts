@@ -155,7 +155,46 @@ export type WorkoutType =
   | "indoor_cycle"
   | "other"
 
-export type ViewType = "calendar" | "daily" | "metrics";
+export type ViewType = "calendar" | "daily" | "metrics" | "weekly";
+
+export interface WeekSummary {
+  workoutCount: number;
+  avgSleepHours: number | null;
+  weightDelta: number | null;
+  fastingCompliant: number;
+  fastingTotal: number;
+}
+
+export interface DaySummary {
+  date: string;
+  weight: number | null;
+  energy: number | null;
+  alcohol: boolean | null;
+  sleepHours: number | null;
+  ouraScore: number | null;
+  appleScore: number | null;
+  workouts: WorkoutRow[];
+  totalProtein: number | null;
+  totalCalories: number | null;
+  fastingCompliant: boolean | null;
+  pullups: number | null;
+}
+
+export interface WeekData {
+  start: string;
+  end: string;
+  days: DaySummary[];
+  summary: {
+    daysLogged: number;
+    weight: { first: number | null; last: number | null; delta: number | null };
+    sleep: { avgHours: number | null; avgOura: number | null; avgApple: number | null };
+    workouts: { total: number; types: string[] };
+    meals: { avgDailyProtein: number | null; avgDailyCalories: number | null };
+    fasting: { compliantDays: number; totalDays: number };
+    alcohol: { daysWith: number; daysWithout: number };
+    pullups: { total: number; days: number };
+  };
+}
 
 export type CustomMetricRow = Database["public"]["Tables"]["custom_metrics"]["Row"];
 export type BloodPressureRow = Database["public"]["Tables"]["blood_pressure"]["Row"];
