@@ -46,7 +46,7 @@ The visual layer. Calendar view + metrics. Deploy to Vercel.
 |---|---|---|
 | #12 | Calendar view component (month view, color-coded workouts) | **done** |
 | #13 | Day detail view (meals, metrics, notes on click) | **done** |
-| #14 | Metrics dashboard (weight trend, sleep, streaks, BP) | todo |
+| #14 | Metrics dashboard (weight trend, sleep, streaks, BP) | **done** |
 | #15 | Weekly summary view | **done** |
 | #16 | Deploy to Vercel | todo |
 
@@ -73,6 +73,18 @@ Source integrations (Apple Health, Oura, Hevy, Strava) live in LifeOS, not IronC
 | #38 | Add `delete_meal` MCP tool | **done** |
 | #39 | Make workout types table-driven instead of hardcoded | todo |
 | #40 | Structured workout details rendering (generic + type-specific renderers, maps for hike/run) | todo |
+
+## Bugs
+
+| Issue | Task | Status |
+|---|---|---|
+| #48 | Streak cards show 0 when today not yet logged | todo |
+
+## Features
+
+| Issue | Task | Status |
+|---|---|---|
+| #49 | Track personal records and longest streaks | todo |
 
 ## Future Ideas
 - Apple Shortcuts for quick logging from iPhone
