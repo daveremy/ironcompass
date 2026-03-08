@@ -2,12 +2,12 @@ import { Command, Option } from "commander";
 import { fail, success } from "../output.js";
 import { upsertRow, insertRow } from "../db.js";
 import { ensureDailyEntry } from "../lib/ensure-daily-entry.js";
-import { parseNum, parseList, sparse } from "../lib/parse.js";
+import { parseNum, parseList, parseJsonObject, sparse } from "../lib/parse.js";
 import { todayDate } from "../lib/date.js";
 
 export const WORKOUT_TYPES = [
   "pickleball", "strength", "hike", "golf", "run",
-  "elliptical", "mobility", "sauna", "hot_tub", "other",
+  "elliptical", "mobility", "sauna", "hot_tub", "indoor_cycle", "other",
 ] as const;
 
 type WorkoutType = typeof WORKOUT_TYPES[number];
@@ -33,7 +33,7 @@ export async function logBp(date: string, systolic: number, diastolic: number, f
   return insertRow("blood_pressure", { date, systolic, diastolic, ...sparse(fields) });
 }
 
-export async function logWorkout(date: string, type: WorkoutType, fields: { duration_min?: number; distance_mi?: number; elevation_ft?: number; calories?: number; avg_hr?: number; notes?: string; planned?: boolean; completed?: boolean } = {}) {
+export async function logWorkout(date: string, type: WorkoutType, fields: { duration_min?: number; distance_mi?: number; elevation_ft?: number; calories?: number; avg_hr?: number; notes?: string; planned?: boolean; completed?: boolean; details?: Record<string, unknown> } = {}) {
   await ensureDailyEntry(date);
   return insertRow("workouts", { date, type, ...sparse(fields) });
 }
@@ -175,6 +175,7 @@ export function registerLogCommands(program: Command): void {
     .option("--calories <cal>", "Calories burned")
     .option("--hr <bpm>", "Average heart rate")
     .option("--notes <text>", "Notes")
+    .option("--details <json>", "Type-specific details as JSON object")
     .option("--planned", "Was planned")
     .option("--no-planned", "Was not planned")
     .option("--completed", "Was completed")
@@ -188,6 +189,7 @@ export function registerLogCommands(program: Command): void {
           calories: parseNum("calories", opts.calories),
           avg_hr: parseNum("hr", opts.hr),
           notes: opts.notes as string | undefined,
+          details: opts.details !== undefined ? parseJsonObject(opts.details as string) : undefined,
           planned: opts.planned as boolean | undefined,
           completed: opts.completed as boolean | undefined,
         });

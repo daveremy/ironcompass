@@ -124,6 +124,7 @@ export type Database = {
           completed: boolean | null
           created_at: string | null
           date: string
+          details: Record<string, unknown> | null
           distance_mi: number | null
           duration_min: number | null
           elevation_ft: number | null
@@ -148,6 +149,7 @@ export type WorkoutType =
   | "mobility"
   | "sauna"
   | "hot_tub"
+  | "indoor_cycle"
   | "other"
 
 export type ViewType = "calendar" | "daily" | "metrics";
@@ -173,6 +175,7 @@ export const WORKOUT_COLORS: Record<WorkoutType, string> = {
   mobility: "#eab308",   // yellow
   sauna: "#f59e0b",      // amber
   hot_tub: "#ec4899",    // pink
+  indoor_cycle: "#f43f5e", // rose
   other: "#737373",      // gray
 }
 

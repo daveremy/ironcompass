@@ -25,7 +25,7 @@ Trigger when the user mentions any of:
 ## How to parse
 
 - **Meals**: Extract name, protein, fat, carbs, calories from context. Log what's stated, omit what's not.
-- **Workouts**: Map to types: pickleball, strength, hike, golf, run, elliptical, mobility, sauna, hot_tub, other. Extract duration, distance, elevation, calories, HR from what's stated.
+- **Workouts**: Map to types: pickleball, strength, hike, golf, run, elliptical, mobility, sauna, hot_tub, indoor_cycle, other. Extract duration, distance, elevation, calories, HR from what's stated.
 - **Weight**: Parse number as lbs.
 - **Energy**: Parse 1-5 scale. If ambiguous ("feeling great" → 4-5, "okay" → 3, "tired" → 1-2), confirm before logging.
 - **Sleep**: Apple score, Oura score, hours, CPAP (bool), mouth tape (bool), readiness, avg HR, HRV.

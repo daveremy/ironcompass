@@ -38,6 +38,11 @@ function WorkoutCard({ workout }: { workout: WorkoutRow }) {
       {workout.notes && (
         <p className="text-sm text-foreground/70">{workout.notes}</p>
       )}
+      {workout.details && Object.keys(workout.details).length > 0 && (
+        <pre className="text-xs font-mono text-foreground/60 bg-background/80 rounded p-2 overflow-x-auto whitespace-pre-wrap">
+          {JSON.stringify(workout.details, null, 2)}
+        </pre>
+      )}
     </div>
   );
 }

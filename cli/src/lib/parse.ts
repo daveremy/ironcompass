@@ -11,6 +11,15 @@ export function parseList(raw: string): string[] {
   return raw.split(",").map(s => s.trim()).filter(s => s !== "");
 }
 
+export function parseJsonObject(raw: string): Record<string, unknown> {
+  let parsed: unknown;
+  try { parsed = JSON.parse(raw); } catch { throw new Error("Invalid JSON"); }
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+    throw new Error("Expected a JSON object, not an array or primitive");
+  }
+  return parsed as Record<string, unknown>;
+}
+
 export function sparse<T extends Record<string, unknown>>(obj: T): Partial<T> {
   return Object.fromEntries(
     Object.entries(obj).filter(([, v]) => v !== undefined)
