@@ -36,6 +36,10 @@ export function parseTimestamp(date: string, raw: string): string {
   return raw;
 }
 
+export function mergeSupplements(existing: string[], incoming: string[]): string[] {
+  return [...new Set([...existing, ...incoming])];
+}
+
 export function sparse<T extends Record<string, unknown>>(obj: T): Partial<T> {
   return Object.fromEntries(
     Object.entries(obj).filter(([, v]) => v !== undefined)
