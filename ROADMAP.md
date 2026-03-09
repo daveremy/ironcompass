@@ -87,6 +87,8 @@ Source integrations (Apple Health, Oura, Hevy, Strava) live in LifeOS, not IronC
 |---|---|---|
 | #49 | Track personal records and longest streaks | todo |
 | #52 | Use `display_name` from workout_types table in UI | todo |
+| #55 | Add prev/next day navigation to daily detail view | todo |
+| #56 | Package IronCompass as a Claude Code plugin with companion skill | todo |
 
 ## Testing
 
