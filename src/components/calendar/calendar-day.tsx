@@ -1,15 +1,17 @@
-import { WorkoutRow, getWorkoutColor } from "@/lib/types";
+import type { WorkoutRow } from "@/lib/types";
+import { FALLBACK_COLOR } from "@/lib/workout-types";
 
 interface CalendarDayProps {
   date: Date;
   workouts: WorkoutRow[];
+  colorMap: Record<string, string>;
   isCurrentMonth: boolean;
   isToday: boolean;
   onClick: () => void;
 }
 
-function WorkoutDot({ type }: { type: string }) {
-  const color = getWorkoutColor(type);
+function WorkoutDot({ type, colorMap }: { type: string; colorMap: Record<string, string> }) {
+  const color = colorMap[type] ?? FALLBACK_COLOR;
   return (
     <span
       className="w-2 h-2 rounded-full shrink-0"
@@ -24,17 +26,20 @@ function WorkoutDot({ type }: { type: string }) {
 export default function CalendarDay({
   date,
   workouts,
+  colorMap,
   isCurrentMonth,
   isToday,
   onClick,
 }: CalendarDayProps) {
   const day = date.getDate();
+  const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
   const isRest = isCurrentMonth && workouts.length === 0;
   const showOverflow = workouts.length > 3;
   const visibleWorkouts = workouts.slice(0, showOverflow ? 2 : 3);
 
   return (
     <button
+      data-testid={`day-${dateStr}`}
       onClick={onClick}
       className={`
         w-full h-full flex flex-col items-start p-1.5 sm:p-2 rounded-lg border transition-all min-h-[3.5rem] sm:min-h-[4.5rem]
@@ -57,7 +62,7 @@ export default function CalendarDay({
 
       <div className="flex items-center gap-1 mt-auto pt-1">
         {visibleWorkouts.map((w) => (
-          <WorkoutDot key={w.id} type={w.type} />
+          <WorkoutDot key={w.id} type={w.type} colorMap={colorMap} />
         ))}
         {showOverflow && (
           <span className="text-[9px] font-mono text-muted leading-none">

@@ -1,6 +1,10 @@
 import Badge from "@/components/day-detail/badge";
-import { getWorkoutColor } from "@/lib/types";
+import { FALLBACK_COLOR } from "@/lib/workout-types";
 
-export default function WorkoutTypeBadge({ type }: { type: string }) {
-  return <Badge label={type} color={getWorkoutColor(type)} />;
+export default function WorkoutTypeBadge({ type, color }: { type: string; color?: string }) {
+  return (
+    <span data-testid={`badge-${type}`}>
+      <Badge label={type} color={color ?? FALLBACK_COLOR} />
+    </span>
+  );
 }

@@ -119,6 +119,7 @@ The MCP server exposes these as tools Claude can call directly:
 - `ironcompass_log_supplements` — log supplements taken
 - `ironcompass_log_bodycomp` — log body composition (Hume Body Pod)
 - `ironcompass_log_metric` — log a custom numeric metric
+- `ironcompass_list_workout_types` — list all valid workout types with display names and colors
 - `ironcompass_delete_metric` — delete a custom metric entry by ID
 - `ironcompass_delete_meal` — delete a meal by ID
 - `ironcompass_delete_workout` — delete a workout by ID
@@ -172,6 +173,8 @@ For each feature/task:
 7. **Commit** — reference GitHub issue number in commit message
 
 Use GitHub issues for all work. ROADMAP.md references issues. Use PRs for historical record.
+
+**PR descriptions must include `closes #<issue>` so GitHub auto-closes the issue on merge.** Use the `closes` keyword in the PR body, not just `(#X)` in commit messages.
 
 ## Preferences
 - No over-engineering. Ship fast, iterate.

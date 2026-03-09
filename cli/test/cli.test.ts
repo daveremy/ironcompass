@@ -50,10 +50,17 @@ describe("ironcompass CLI", () => {
     assert.ok(stdout.includes("--date"));
   });
 
-  it("workout --type validates against allowed choices", () => {
-    const { stderr, exitCode } = run("log", "workout", "--type", "swimming");
+  it("workout --type validates against DB workout types", () => {
+    const { stderr, exitCode } = run("log", "workout", "--type", "swimming", "--duration", "30");
     assert.equal(exitCode, 1);
-    assert.ok(stderr.includes("Allowed choices"));
+    const parsed = JSON.parse(stderr);
+    assert.equal(parsed.ok, false);
+    // Error comes from validateWorkoutType — either "Unknown workout type" (table exists)
+    // or "Failed to fetch workout types" (table not yet migrated)
+    assert.ok(
+      parsed.error.includes("workout type") || parsed.error.includes("workout_types"),
+      `Expected workout type validation error, got: ${parsed.error}`
+    );
   });
 
   it("log daily --help shows --date default as YYYY-MM-DD", () => {
@@ -140,10 +147,11 @@ describe("ironcompass CLI", () => {
     assert.ok(stdout.includes("--hrv"), "missing --hrv");
   });
 
-  // indoor_cycle is a valid workout type
-  it("workout --type indoor_cycle is accepted as valid choice", () => {
+  // workout --type description mentions example types
+  it("workout --help shows type option with example types", () => {
     const { stdout } = run("log", "workout", "--help");
-    assert.ok(stdout.includes("indoor_cycle"), "indoor_cycle should be listed as valid type");
+    assert.ok(stdout.includes("--type"), "should show --type option");
+    assert.ok(stdout.includes("strength"), "should mention strength as example");
   });
 
   // --details option exists

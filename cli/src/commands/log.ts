@@ -1,16 +1,10 @@
-import { Command, Option } from "commander";
+import { Command } from "commander";
 import { fail, success } from "../output.js";
 import { getSupabase, upsertRow, insertRow } from "../db.js";
 import { ensureDailyEntry } from "../lib/ensure-daily-entry.js";
 import { parseNum, parseList, parseJsonObject, parseTimestamp, mergeSupplements, sparse } from "../lib/parse.js";
 import { todayDate } from "../lib/date.js";
-
-export const WORKOUT_TYPES = [
-  "pickleball", "strength", "hike", "golf", "run",
-  "elliptical", "mobility", "sauna", "hot_tub", "indoor_cycle", "other",
-] as const;
-
-type WorkoutType = typeof WORKOUT_TYPES[number];
+import { validateWorkoutType } from "../lib/workout-types.js";
 
 // --- Extracted core functions (used by both CLI and MCP) ---
 
@@ -33,7 +27,8 @@ export async function logBp(date: string, systolic: number, diastolic: number, f
   return insertRow("blood_pressure", { date, systolic, diastolic, ...sparse(fields) });
 }
 
-export async function logWorkout(date: string, type: WorkoutType, fields: { duration_min?: number; distance_mi?: number; elevation_ft?: number; calories?: number; avg_hr?: number; notes?: string; planned?: boolean; completed?: boolean; details?: Record<string, unknown>; start_time?: string; end_time?: string; source?: string } = {}) {
+export async function logWorkout(date: string, type: string, fields: { duration_min?: number; distance_mi?: number; elevation_ft?: number; calories?: number; avg_hr?: number; notes?: string; planned?: boolean; completed?: boolean; details?: Record<string, unknown>; start_time?: string; end_time?: string; source?: string } = {}) {
+  await validateWorkoutType(type);
   await ensureDailyEntry(date);
   const normalized = {
     ...fields,
@@ -177,7 +172,7 @@ export function registerLogCommands(program: Command): void {
     .command("workout")
     .description("Log a workout")
     .option("--date <date>", "Date (YYYY-MM-DD)", today)
-    .addOption(new Option("--type <type>", "Workout type").choices(WORKOUT_TYPES as unknown as string[]).makeOptionMandatory())
+    .requiredOption("--type <type>", "Workout type (e.g. strength, hike, run, pickleball)")
     .option("--duration <min>", "Duration in minutes")
     .option("--distance <miles>", "Distance in miles")
     .option("--elevation <ft>", "Elevation gain in feet")
@@ -194,7 +189,7 @@ export function registerLogCommands(program: Command): void {
     .option("--no-completed", "Was not completed")
     .action(async (opts) => {
       try {
-        const result = await logWorkout(opts.date as string, opts.type as WorkoutType, {
+        const result = await logWorkout(opts.date as string, opts.type as string, {
           duration_min: parseNum("duration", opts.duration),
           distance_mi: parseNum("distance", opts.distance),
           elevation_ft: parseNum("elevation", opts.elevation),

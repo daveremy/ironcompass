@@ -375,6 +375,24 @@ export type Database = {
           },
         ]
       }
+      workout_types: {
+        Row: {
+          name: string
+          display_name: string
+          color: string
+        }
+        Insert: {
+          name: string
+          display_name: string
+          color: string
+        }
+        Update: {
+          name?: string
+          display_name?: string
+          color?: string
+        }
+        Relationships: []
+      }
       workouts: {
         Row: {
           avg_hr: number | null

@@ -13,6 +13,7 @@ export default function SectionCard({
 }: SectionCardProps) {
   return (
     <div
+      data-testid={`section-${title.toLowerCase().replace(/\s+/g, "-")}`}
       className="bg-surface rounded-lg border border-border overflow-hidden"
       style={{ borderLeftColor: accent, borderLeftWidth: 3 }}
     >
