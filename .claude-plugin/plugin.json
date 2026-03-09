@@ -1,0 +1,8 @@
+{
+  "name": "ironcompass",
+  "description": "Personal health tracking — MCP server with companion usage skill for AI assistants",
+  "version": "0.1.0",
+  "author": { "name": "daveremy" },
+  "homepage": "https://github.com/daveremy/ironcompass",
+  "repository": "https://github.com/daveremy/ironcompass"
+}
