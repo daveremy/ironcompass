@@ -10,7 +10,7 @@ IronCompass is a personal health tracking platform. You log data via MCP tools a
 
 ## Core Pattern: Query Before Log
 
-Always call `ironcompass_query_today` before prompting the user to log data. This shows what's already recorded so you can focus on what's missing and avoid duplicate inserts.
+Always call `ironcompass_query_today` before prompting the user to log data. This shows what's already recorded so you can focus on what's missing and avoid duplicate inserts. When logging past days, pass the target date — e.g., `ironcompass_query_today` with `date: "2026-03-07"` — not today's date.
 
 ## Data Dependencies
 
@@ -55,7 +55,7 @@ Use `ironcompass_list_workout_types` to get valid type names. The `source` field
 
 **`ironcompass_query_today`** — All data for a single date. Accepts optional `date` param.
 
-**`ironcompass_query_week`** — Last 7 days with aggregates (weight delta, avg sleep, workout count, protein/calories, fasting compliance, streaks). Always returns last 7 days from today — does not accept a date parameter.
+**`ironcompass_query_week`** — Last 7 days with aggregates (weight delta, avg sleep, workout count, protein/calories, fasting compliance, alcohol, pullups, custom metrics). Does not include streaks — call `ironcompass_query_streak` separately. Always returns last 7 days from today — does not accept a date parameter.
 
 **`ironcompass_query_trend`** — Time-series points and summary stats over N days. Built-in metrics: `weight`, `energy`, `sleep`, `hrv`, `hr-sleep`, `readiness`, `bp`, `pullups`, `calories`, `protein`, `body-fat`. Also accepts any custom metric name (aggregated as daily sums).
 <!-- Built-in list sourced from VALID_METRICS in cli/src/commands/query.ts -->
