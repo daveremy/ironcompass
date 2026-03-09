@@ -89,6 +89,7 @@ Source integrations (Apple Health, Oura, Hevy, Strava) live in LifeOS, not IronC
 | #52 | Use `display_name` from workout_types table in UI | todo |
 | #55 | Add prev/next day navigation to daily detail view | todo |
 | #56 | Package IronCompass as a Claude Code plugin with companion skill | todo |
+| #58 | Weekly planning & visualization (TrainingPeaks-style) — plan templates, planned vs actual, weekly targets | todo |
 
 ## Testing
 
