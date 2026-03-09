@@ -69,17 +69,17 @@ Source integrations (Apple Health, Oura, Hevy, Strava) live in LifeOS, not IronC
 | #44 | Change `energy` field from integer to decimal | **done** |
 | #34 | Add `indoor_cycle` workout type | **done** |
 | #35 | Add `details` JSONB column to workouts for type-specific data (strength sets, golf scores, etc.) | **done** |
-| #37 | Deduplicate WorkoutType and Database types across CLI and web | todo |
+| #37 | Deduplicate WorkoutType and Database types across CLI and web | **done** |
 | #38 | Add `delete_meal` MCP tool | **done** |
-| #39 | Make workout types table-driven instead of hardcoded | todo |
-| #40 | Structured workout details rendering (generic + type-specific renderers, maps for hike/run) | todo |
+| #39 | Make workout types table-driven instead of hardcoded | **done** |
+| #40 | Structured workout details rendering (generic + type-specific renderers, maps for hike/run) | **done** |
 
 ## Bugs
 
 | Issue | Task | Status |
 |---|---|---|
-| #48 | Streak cards show 0 when today not yet logged | todo |
-| #50 | Add axis labels to metrics dashboard charts | todo |
+| #48 | Streak cards show 0 when today not yet logged | **done** |
+| #50 | Add axis labels to metrics dashboard charts | **done** |
 
 ## Features
 

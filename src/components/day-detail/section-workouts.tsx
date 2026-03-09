@@ -2,8 +2,9 @@ import type { WorkoutRow } from "@/lib/types";
 import { formatTime } from "@/lib/date";
 import SectionCard from "./section-card";
 import WorkoutTypeBadge from "@/components/ui/workout-type-badge";
+import WorkoutDetails from "./workout-details";
 
-function WorkoutCard({ workout }: { workout: WorkoutRow }) {
+function WorkoutCard({ workout, colorMap }: { workout: WorkoutRow; colorMap: Record<string, string> }) {
   const stats = [
     workout.duration_min != null && `${workout.duration_min} min`,
     workout.distance_mi != null && `${workout.distance_mi} mi`,
@@ -18,7 +19,7 @@ function WorkoutCard({ workout }: { workout: WorkoutRow }) {
         {workout.start_time && (
           <span className="text-xs font-mono text-muted">{formatTime(workout.start_time)}</span>
         )}
-        <WorkoutTypeBadge type={workout.type} />
+        <WorkoutTypeBadge type={workout.type} color={colorMap[workout.type]} />
         {workout.source && (
           <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-mono text-slate-400 bg-slate-800/50 border border-slate-700/50">
             {workout.source}
@@ -32,21 +33,19 @@ function WorkoutCard({ workout }: { workout: WorkoutRow }) {
         <p className="text-sm text-foreground/70">{workout.notes}</p>
       )}
       {workout.details && Object.keys(workout.details).length > 0 && (
-        <pre className="text-xs font-mono text-foreground/60 bg-background/80 rounded p-2 overflow-x-auto whitespace-pre-wrap">
-          {JSON.stringify(workout.details, null, 2)}
-        </pre>
+        <WorkoutDetails type={workout.type} details={workout.details} />
       )}
     </div>
   );
 }
 
-export default function SectionWorkouts({ data }: { data: WorkoutRow[] }) {
+export default function SectionWorkouts({ data, colorMap }: { data: WorkoutRow[]; colorMap: Record<string, string> }) {
   return (
     <SectionCard title="Workouts" accent="#3b82f6" empty={data.length === 0}>
       {data.length > 0 && (
         <div className="space-y-2">
           {data.map((w) => (
-            <WorkoutCard key={w.id} workout={w} />
+            <WorkoutCard key={w.id} workout={w} colorMap={colorMap} />
           ))}
         </div>
       )}

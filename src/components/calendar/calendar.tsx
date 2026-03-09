@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { fetchWeekSummaries } from "@/lib/queries";
 import type { WorkoutRow, WeekSummary } from "@/lib/types";
+import { getWorkoutTypes, buildColorMap } from "@/lib/workout-types";
 import { getMonday, formatDate, addDays, isSameDay, parseDate, SHORT_DAYS } from "@/lib/date";
 import CalendarHeader from "./calendar-header";
 import CalendarDay from "./calendar-day";
@@ -15,8 +16,14 @@ export default function Calendar({ initialMonth }: { initialMonth?: string } = {
   const [currentMonth, setCurrentMonth] = useState<Date | null>(null);
   const [workouts, setWorkouts] = useState<WorkoutRow[]>([]);
   const [weekSummaries, setWeekSummaries] = useState<Map<string, WeekSummary>>(new Map());
+  const [colorMap, setColorMap] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Fetch workout types once
+  useEffect(() => {
+    getWorkoutTypes().then((types) => setColorMap(buildColorMap(types))).catch(() => {});
+  }, []);
 
   // Initialize on client to avoid hydration mismatch; resync when initialMonth changes
   useEffect(() => {
@@ -195,6 +202,7 @@ export default function Calendar({ initialMonth }: { initialMonth?: string } = {
                     <CalendarDay
                       date={date}
                       workouts={dayWorkouts}
+                      colorMap={colorMap}
                       isCurrentMonth={date.getMonth() === currentMonth.getMonth()}
                       isToday={isSameDay(date, today)}
                       onClick={() => router.push(`/?view=daily&date=${key}&month=${formatDate(currentMonth)}`)}

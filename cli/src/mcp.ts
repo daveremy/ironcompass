@@ -3,7 +3,8 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { fetchDay, fetchWeek, computeTrend, computeStreak, VALID_METRICS, VALID_STREAKS } from "./commands/query.js";
-import { logDaily, logSleep, logFasting, logBp, logWorkout, logMeal, logPullups, logSupplements, logBodycomp, logMetric, WORKOUT_TYPES } from "./commands/log.js";
+import { logDaily, logSleep, logFasting, logBp, logWorkout, logMeal, logPullups, logSupplements, logBodycomp, logMetric } from "./commands/log.js";
+import { getWorkoutTypes } from "./lib/workout-types.js";
 import { deleteRowById } from "./db.js";
 import { todayDate } from "./lib/date.js";
 import { dayUrl, calendarUrl } from "./lib/urls.js";
@@ -132,7 +133,7 @@ server.registerTool("ironcompass_log_workout", {
   description: "Log a workout session",
   inputSchema: z.object({
     date: optDate,
-    type: z.enum(WORKOUT_TYPES).describe("Workout type"),
+    type: z.string().describe("Workout type (e.g. strength, hike, run, pickleball, golf, elliptical, mobility, sauna, indoor_cycle)"),
     duration_min: z.number().optional().describe("Duration in minutes"),
     distance_mi: z.number().optional().describe("Distance in miles"),
     elevation_ft: z.number().optional().describe("Elevation gain in feet"),
@@ -226,6 +227,16 @@ server.registerTool("ironcompass_log_metric", {
 }, async ({ date, name, value, unit, notes }) => {
   const d = date ?? todayDate();
   return logResult(d, await logMetric(d, name, value, { unit, notes }));
+});
+
+// --- List tools ---
+
+server.registerTool("ironcompass_list_workout_types", {
+  title: "List Workout Types",
+  description: "List all valid workout types with display names and colors",
+  inputSchema: z.object({}),
+}, async () => {
+  return textResult(await getWorkoutTypes());
 });
 
 // --- Delete tools ---

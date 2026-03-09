@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { fetchDayData, type DayData } from "@/lib/queries";
+import { getWorkoutTypes, buildColorMap } from "@/lib/workout-types";
 import DayHeader from "./day-header";
 import SectionVitals from "./section-vitals";
 import SectionSleep from "./section-sleep";
@@ -16,6 +17,7 @@ import SectionCustomMetrics from "./section-custom-metrics";
 
 export default function DayDetail({ date, backMonth }: { date: string; backMonth?: string }) {
   const [data, setData] = useState<DayData | null>(null);
+  const [colorMap, setColorMap] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,10 +26,13 @@ export default function DayDetail({ date, backMonth }: { date: string; backMonth
     setLoading(true);
     setError(null);
 
-    fetchDayData(date)
-      .then((result) => {
+    const typesPromise = getWorkoutTypes().catch(() => [] as Awaited<ReturnType<typeof getWorkoutTypes>>);
+
+    Promise.all([fetchDayData(date), typesPromise])
+      .then(([result, types]) => {
         if (!controller.signal.aborted) {
           setData(result);
+          setColorMap(buildColorMap(types));
           setLoading(false);
         }
       })
@@ -63,7 +68,7 @@ export default function DayDetail({ date, backMonth }: { date: string; backMonth
         <SectionFasting data={data!.fasting} />
         <SectionBP data={data!.bloodPressure} />
         <div className="col-span-full">
-          <SectionWorkouts data={data!.workouts} />
+          <SectionWorkouts data={data!.workouts} colorMap={colorMap} />
         </div>
         <div className="col-span-full">
           <SectionMeals data={data!.meals} />

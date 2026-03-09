@@ -117,6 +117,13 @@ export type Database = {
           updated_at: string | null
         }
       }
+      workout_types: {
+        Row: {
+          name: string
+          display_name: string
+          color: string
+        }
+      }
       workouts: {
         Row: {
           avg_hr: number | null
@@ -141,19 +148,6 @@ export type Database = {
     }
   }
 }
-
-export type WorkoutType =
-  | "pickleball"
-  | "strength"
-  | "hike"
-  | "golf"
-  | "run"
-  | "elliptical"
-  | "mobility"
-  | "sauna"
-  | "hot_tub"
-  | "indoor_cycle"
-  | "other"
 
 export type ViewType = "calendar" | "daily" | "metrics" | "weekly";
 
@@ -206,21 +200,3 @@ export type PullupsRow = Database["public"]["Tables"]["pullups"]["Row"];
 export type SleepRow = Database["public"]["Tables"]["sleep"]["Row"];
 export type SupplementsRow = Database["public"]["Tables"]["supplements"]["Row"];
 export type WorkoutRow = Database["public"]["Tables"]["workouts"]["Row"]
-
-export const WORKOUT_COLORS: Record<WorkoutType, string> = {
-  pickleball: "#22c55e", // green
-  strength: "#3b82f6",   // blue
-  hike: "#f97316",       // orange
-  golf: "#a855f7",       // purple
-  run: "#ef4444",        // red
-  elliptical: "#06b6d4", // cyan
-  mobility: "#eab308",   // yellow
-  sauna: "#f59e0b",      // amber
-  hot_tub: "#ec4899",    // pink
-  indoor_cycle: "#f43f5e", // rose
-  other: "#737373",      // gray
-}
-
-export function getWorkoutColor(type: string): string {
-  return WORKOUT_COLORS[type as WorkoutType] ?? WORKOUT_COLORS.other;
-}

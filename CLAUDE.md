@@ -119,6 +119,7 @@ The MCP server exposes these as tools Claude can call directly:
 - `ironcompass_log_supplements` — log supplements taken
 - `ironcompass_log_bodycomp` — log body composition (Hume Body Pod)
 - `ironcompass_log_metric` — log a custom numeric metric
+- `ironcompass_list_workout_types` — list all valid workout types with display names and colors
 - `ironcompass_delete_metric` — delete a custom metric entry by ID
 - `ironcompass_delete_meal` — delete a meal by ID
 - `ironcompass_delete_workout` — delete a workout by ID
