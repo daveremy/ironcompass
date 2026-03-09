@@ -174,6 +174,8 @@ For each feature/task:
 
 Use GitHub issues for all work. ROADMAP.md references issues. Use PRs for historical record.
 
+**PR descriptions must include `closes #<issue>` so GitHub auto-closes the issue on merge.** Use the `closes` keyword in the PR body, not just `(#X)` in commit messages.
+
 ## Preferences
 - No over-engineering. Ship fast, iterate.
 - CLI and MCP are more important than the web UI initially

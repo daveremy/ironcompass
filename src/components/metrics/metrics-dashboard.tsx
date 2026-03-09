@@ -135,7 +135,7 @@ export default function MetricsDashboard() {
   const proteinData = trends?.protein && isSingle(trends.protein) ? trends.protein : null;
 
   return (
-    <div className="animate-slide-in">
+    <div data-testid="metrics-dashboard" className="animate-slide-in">
       <div className="flex items-center justify-between mb-6">
         <h2 className="font-mono text-sm font-bold tracking-[0.15em] uppercase text-foreground">
           Metrics

@@ -89,7 +89,7 @@ export default function WeeklyView({ date, backMonth }: { date?: string; backMon
     : formatDate(new Date(monday.getFullYear(), monday.getMonth(), 1));
 
   return (
-    <div className="animate-slide-in">
+    <div data-testid="weekly-view" className="animate-slide-in">
       <div className="mb-3">
         <Link href={`/?month=${calendarMonth}`} className="text-xs font-mono text-muted hover:text-accent transition-colors">
           &larr; Calendar

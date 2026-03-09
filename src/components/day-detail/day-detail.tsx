@@ -60,7 +60,7 @@ export default function DayDetail({ date, backMonth }: { date: string; backMonth
   }
 
   return (
-    <div className="animate-slide-in">
+    <div data-testid="day-detail" className="animate-slide-in">
       <DayHeader date={date} backMonth={backMonth} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <SectionVitals data={data!.daily} />

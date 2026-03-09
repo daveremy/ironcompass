@@ -12,6 +12,7 @@ export default function CalendarWeekSummary({ monday, month, summary }: Calendar
 
   return (
     <button
+      data-testid={`week-summary-${monday}`}
       onClick={() => router.push(`/?view=weekly&date=${monday}&month=${month}`)}
       className="w-full h-full flex flex-col items-center justify-center gap-1 p-1 rounded-lg border border-transparent hover:border-border hover:bg-surface-hover transition-all min-h-[3.5rem] sm:min-h-[4.5rem]"
     >

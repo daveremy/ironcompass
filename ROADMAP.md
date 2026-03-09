@@ -86,6 +86,13 @@ Source integrations (Apple Health, Oura, Hevy, Strava) live in LifeOS, not IronC
 | Issue | Task | Status |
 |---|---|---|
 | #49 | Track personal records and longest streaks | todo |
+| #52 | Use `display_name` from workout_types table in UI | todo |
+
+## Testing
+
+| Issue | Task | Status |
+|---|---|---|
+| #53 | Expand e2e test coverage: weekly details, edge cases, mobile | todo |
 
 ## Future Ideas
 - Apple Shortcuts for quick logging from iPhone

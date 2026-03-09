@@ -174,7 +174,7 @@ export default function Calendar({ initialMonth }: { initialMonth?: string } = {
       </div>
 
       {/* Calendar grid */}
-      <div className="grid grid-cols-7 sm:grid-cols-[repeat(7,1fr)_4rem] gap-px rounded-lg overflow-hidden border border-border bg-border">
+      <div data-testid="calendar-grid" className="grid grid-cols-7 sm:grid-cols-[repeat(7,1fr)_4rem] gap-px rounded-lg overflow-hidden border border-border bg-border">
         {loading ? (
           Array.from({ length: 48 }).map((_, i) => (
             <div
