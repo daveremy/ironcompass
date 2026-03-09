@@ -1,0 +1,17 @@
+{
+  "name": "ironcompass-plugins",
+  "owner": {
+    "name": "daveremy"
+  },
+  "plugins": [
+    {
+      "name": "ironcompass",
+      "source": {
+        "source": "github",
+        "repo": "daveremy/ironcompass"
+      },
+      "description": "Personal health tracking — MCP server with companion usage skill for AI assistants",
+      "version": "0.1.0"
+    }
+  ]
+}
