@@ -6,6 +6,13 @@ export interface WorkoutTypeRecord {
   color: string;
 }
 
+export interface WorkoutTypeInfo {
+  color: string;
+  displayName: string;
+}
+
+export type WorkoutTypeLookup = Record<string, WorkoutTypeInfo>;
+
 export const FALLBACK_COLOR = "#737373";
 
 let _cache: WorkoutTypeRecord[] | null = null;
@@ -21,8 +28,8 @@ export async function getWorkoutTypes(): Promise<WorkoutTypeRecord[]> {
   return _cache;
 }
 
-export function buildColorMap(types: WorkoutTypeRecord[]): Record<string, string> {
-  const map: Record<string, string> = {};
-  for (const t of types) map[t.name] = t.color;
+export function buildTypeLookup(types: WorkoutTypeRecord[]): WorkoutTypeLookup {
+  const map: WorkoutTypeLookup = {};
+  for (const t of types) map[t.name] = { color: t.color, displayName: t.display_name };
   return map;
 }

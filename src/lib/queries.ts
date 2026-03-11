@@ -243,11 +243,14 @@ interface StreakConfig {
   select: string;
   pass: (row: any) => boolean;
   logged: (row: any) => boolean;
+  queryFilter?: (query: any) => any;
 }
 
 const STREAK_MAP: Record<string, StreakConfig> = {
   "alcohol-free": { table: "daily_entries", select: "date, alcohol", pass: (r) => r.alcohol === false, logged: (r) => r.alcohol != null },
   fasting: { table: "fasting", select: "date, compliant", pass: (r) => r.compliant === true, logged: (r) => r.compliant != null },
+  workout: { table: "workouts", select: "date", pass: () => true, logged: () => true, queryFilter: (q: any) => q.or("completed.is.null,completed.eq.true") },
+  logging: { table: "daily_entries", select: "date", pass: () => true, logged: () => true },
 };
 
 export interface StreakResult {
@@ -263,12 +266,14 @@ export async function fetchStreak(metric: string): Promise<StreakResult> {
   const today = todayDate();
   const rangeStart = daysAgoDate(365);
 
-  const { data, error } = await supabase
+  let query = supabase
     .from(cfg.table)
     .select(cfg.select)
     .gte("date", rangeStart)
     .lte("date", today)
     .order("date", { ascending: false });
+  if (cfg.queryFilter) query = cfg.queryFilter(query);
+  const { data, error } = await query;
 
   if (error) throw new Error(`Query failed: ${error.message}`);
   const rows = data ?? [];

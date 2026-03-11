@@ -1,10 +1,13 @@
 import type { WorkoutRow } from "@/lib/types";
+import type { WorkoutTypeLookup } from "@/lib/workout-types";
+import { FALLBACK_COLOR } from "@/lib/workout-types";
 import { formatTime } from "@/lib/date";
 import SectionCard from "./section-card";
 import WorkoutTypeBadge from "@/components/ui/workout-type-badge";
 import WorkoutDetails from "./workout-details";
 
-function WorkoutCard({ workout, colorMap }: { workout: WorkoutRow; colorMap: Record<string, string> }) {
+function WorkoutCard({ workout, typeLookup }: { workout: WorkoutRow; typeLookup: WorkoutTypeLookup }) {
+  const info = typeLookup[workout.type];
   const stats = [
     workout.duration_min != null && `${workout.duration_min} min`,
     workout.distance_mi != null && `${workout.distance_mi} mi`,
@@ -19,7 +22,7 @@ function WorkoutCard({ workout, colorMap }: { workout: WorkoutRow; colorMap: Rec
         {workout.start_time && (
           <span className="text-xs font-mono text-muted">{formatTime(workout.start_time)}</span>
         )}
-        <WorkoutTypeBadge type={workout.type} color={colorMap[workout.type]} />
+        <WorkoutTypeBadge type={workout.type} color={info?.color} displayName={info?.displayName} />
         {workout.source && (
           <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-mono text-slate-400 bg-slate-800/50 border border-slate-700/50">
             {workout.source}
@@ -39,13 +42,13 @@ function WorkoutCard({ workout, colorMap }: { workout: WorkoutRow; colorMap: Rec
   );
 }
 
-export default function SectionWorkouts({ data, colorMap }: { data: WorkoutRow[]; colorMap: Record<string, string> }) {
+export default function SectionWorkouts({ data, typeLookup }: { data: WorkoutRow[]; typeLookup: WorkoutTypeLookup }) {
   return (
     <SectionCard title="Workouts" accent="#3b82f6" empty={data.length === 0}>
       {data.length > 0 && (
         <div className="space-y-2">
           {data.map((w) => (
-            <WorkoutCard key={w.id} workout={w} colorMap={colorMap} />
+            <WorkoutCard key={w.id} workout={w} typeLookup={typeLookup} />
           ))}
         </div>
       )}
