@@ -9,16 +9,20 @@ export default function SectionBodyComp({ data, weight }: { data: BodyCompositio
       {hasData && (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           {weight != null && <Stat label="Weight" value={weight} unit="lbs" />}
-          <Stat label="Body Fat" value={data?.body_fat_pct} unit="%" />
-          <Stat label="Muscle Mass" value={data?.muscle_mass_lbs} unit="lbs" />
-          <Stat label="Bone Mass" value={data?.bone_mass_lbs} unit="lbs" />
-          <Stat label="Body Water" value={data?.body_water_pct} unit="%" />
-          <Stat label="Visceral Fat" value={data?.visceral_fat} />
-          <Stat label="BMR" value={data?.bmr} unit="cal" />
-          {data?.notes && (
-            <div className="col-span-full">
-              <Stat label="Notes" value={data.notes} />
-            </div>
+          {data && (
+            <>
+              <Stat label="Body Fat" value={data.body_fat_pct} unit="%" />
+              <Stat label="Muscle Mass" value={data.muscle_mass_lbs} unit="lbs" />
+              <Stat label="Bone Mass" value={data.bone_mass_lbs} unit="lbs" />
+              <Stat label="Body Water" value={data.body_water_pct} unit="%" />
+              <Stat label="Visceral Fat" value={data.visceral_fat} />
+              <Stat label="BMR" value={data.bmr} unit="cal" />
+              {data.notes && (
+                <div className="col-span-full">
+                  <Stat label="Notes" value={data.notes} />
+                </div>
+              )}
+            </>
           )}
         </div>
       )}
