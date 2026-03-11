@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { fetchDayData, type DayData } from "@/lib/queries";
-import { getWorkoutTypes, buildColorMap } from "@/lib/workout-types";
+import { fetchDayData, fetchStreak, type DayData, type StreakResult } from "@/lib/queries";
+import { getWorkoutTypes, buildColorMap, buildDisplayNameMap } from "@/lib/workout-types";
 import DayHeader from "./day-header";
 import SectionVitals from "./section-vitals";
 import SectionSleep from "./section-sleep";
@@ -15,9 +15,18 @@ import SectionSupplements from "./section-supplements";
 import SectionBodyComp from "./section-body-comp";
 import SectionCustomMetrics from "./section-custom-metrics";
 
+const STREAK_LABELS: Record<string, string> = {
+  "alcohol-free": "days alcohol-free",
+  fasting: "days fasting",
+  workout: "day workout streak",
+  logging: "days logging",
+};
+
 export default function DayDetail({ date, backMonth }: { date: string; backMonth?: string }) {
   const [data, setData] = useState<DayData | null>(null);
+  const [streaks, setStreaks] = useState<StreakResult[]>([]);
   const [colorMap, setColorMap] = useState<Record<string, string>>({});
+  const [displayNameMap, setDisplayNameMap] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,12 +36,17 @@ export default function DayDetail({ date, backMonth }: { date: string; backMonth
     setError(null);
 
     const typesPromise = getWorkoutTypes().catch(() => [] as Awaited<ReturnType<typeof getWorkoutTypes>>);
+    const streaksPromise = Promise.all(
+      ["alcohol-free", "fasting", "workout", "logging"].map((m) => fetchStreak(m).catch(() => null))
+    ).then((results) => results.filter((r): r is StreakResult => r != null && r.current_streak > 0));
 
-    Promise.all([fetchDayData(date), typesPromise])
-      .then(([result, types]) => {
+    Promise.all([fetchDayData(date), typesPromise, streaksPromise])
+      .then(([result, types, streakResults]) => {
         if (!controller.signal.aborted) {
           setData(result);
+          setStreaks(streakResults);
           setColorMap(buildColorMap(types));
+          setDisplayNameMap(buildDisplayNameMap(types));
           setLoading(false);
         }
       })
@@ -62,13 +76,26 @@ export default function DayDetail({ date, backMonth }: { date: string; backMonth
   return (
     <div data-testid="day-detail" className="animate-slide-in">
       <DayHeader date={date} backMonth={backMonth} />
+      {streaks.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-3">
+          {streaks.map((s) => (
+            <span
+              key={s.metric}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono bg-accent/10 text-accent border border-accent/20"
+            >
+              <span className="font-bold">{s.current_streak}</span>
+              <span className="text-accent/70">{STREAK_LABELS[s.metric] ?? s.metric}</span>
+            </span>
+          ))}
+        </div>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <SectionVitals data={data!.daily} />
         <SectionSleep data={data!.sleep} />
         <SectionFasting data={data!.fasting} />
         <SectionBP data={data!.bloodPressure} />
         <div className="col-span-full">
-          <SectionWorkouts data={data!.workouts} colorMap={colorMap} />
+          <SectionWorkouts data={data!.workouts} colorMap={colorMap} displayNameMap={displayNameMap} />
         </div>
         <div className="col-span-full">
           <SectionMeals data={data!.meals} />
@@ -76,7 +103,7 @@ export default function DayDetail({ date, backMonth }: { date: string; backMonth
         <SectionPullups data={data!.pullups} />
         <SectionSupplements data={data!.supplements} />
         <div className="col-span-full">
-          <SectionBodyComp data={data!.bodyComp} />
+          <SectionBodyComp data={data!.bodyComp} weight={data!.daily?.weight} />
         </div>
         <div className="col-span-full">
           <SectionCustomMetrics data={data!.customMetrics} />

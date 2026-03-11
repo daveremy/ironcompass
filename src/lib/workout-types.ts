@@ -26,3 +26,9 @@ export function buildColorMap(types: WorkoutTypeRecord[]): Record<string, string
   for (const t of types) map[t.name] = t.color;
   return map;
 }
+
+export function buildDisplayNameMap(types: WorkoutTypeRecord[]): Record<string, string> {
+  const map: Record<string, string> = {};
+  for (const t of types) map[t.name] = t.display_name;
+  return map;
+}

@@ -80,6 +80,7 @@ Source integrations (Apple Health, Oura, Hevy, Strava) live in LifeOS, not IronC
 |---|---|---|
 | #48 | Streak cards show 0 when today not yet logged | **done** |
 | #50 | Add axis labels to metrics dashboard charts | **done** |
+| #63 | Workout times displayed in UTC instead of local timezone | **done** |
 
 ## Features
 
@@ -89,7 +90,11 @@ Source integrations (Apple Health, Oura, Hevy, Strava) live in LifeOS, not IronC
 | #52 | Use `display_name` from workout_types table in UI | todo |
 | #55 | Add prev/next day navigation to daily detail view | todo |
 | #56 | Package IronCompass as a Claude Code plugin with companion skill | **done** |
+| #58 | Weekly planning & visualization (TrainingPeaks-style) | todo |
 | #59 | Add `walk` workout type | todo |
+| #60 | Body composition section should include weight | todo |
+| #61 | Fasting card should show fast duration prominently | todo |
+| #62 | Sleep card: composite score from multiple sources | todo |
 
 ## Testing
 
