@@ -49,7 +49,7 @@ The `details` field is a JSON object with type-specific structure:
 
 Use `ironcompass_list_workout_types` to get valid type names. The `source` field defaults to "manual" — set to "apple_health", "hevy", "strava", etc. for integration data.
 
-`start_time` and `end_time` accept HH:MM (auto-converted using the workout date) or full ISO 8601 datetime strings.
+`start_time` and `end_time` accept HH:MM (auto-adds local timezone offset) or full ISO 8601 datetime strings. **Always include a timezone offset** in ISO strings (e.g., `2026-03-10T07:59:00-07:00`). Strings without offset are treated as local time, but prefer HH:MM when only local time is known.
 
 ## Query Tools
 
