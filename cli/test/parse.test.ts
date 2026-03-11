@@ -62,6 +62,11 @@ describe("parseTimestamp", () => {
     const result = parseTimestamp("2026-03-10", "2026-03-10T07:59:30");
     assert.match(result, /^2026-03-10T07:59:30[+-]\d{2}:\d{2}$/);
   });
+
+  it("preserves fractional seconds when adding offset to ISO string without timezone", () => {
+    const result = parseTimestamp("2026-03-10", "2026-03-10T07:59:30.123");
+    assert.match(result, /^2026-03-10T07:59:30\.123[+-]\d{2}:\d{2}$/);
+  });
 });
 
 describe("mergeSupplements", () => {

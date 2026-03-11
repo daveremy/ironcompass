@@ -26,7 +26,7 @@ export function parseTimestamp(date: string, raw: string): string {
     return appendLocalOffset(date, pad);
   }
   // ISO string without timezone offset — treat as local time
-  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/.test(raw)) {
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?$/.test(raw)) {
     const isoDate = raw.slice(0, 10);
     const timePart = raw.slice(11); // HH:MM or HH:MM:SS
     return appendLocalOffset(isoDate, timePart);
