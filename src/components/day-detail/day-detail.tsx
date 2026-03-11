@@ -37,9 +37,12 @@ export default function DayDetail({ date, backMonth }: { date: string; backMonth
     setError(null);
 
     const typesPromise = getWorkoutTypes().catch(() => [] as Awaited<ReturnType<typeof getWorkoutTypes>>);
-    const streaksPromise = Promise.all(
-      STREAK_METRICS.map((m) => fetchStreak(m).catch(() => null))
-    ).then((results) => results.filter((r): r is StreakResult => r != null && r.current_streak > 0));
+    const isToday = date === new Date().toISOString().slice(0, 10);
+    const streaksPromise = isToday
+      ? Promise.all(
+          STREAK_METRICS.map((m) => fetchStreak(m).catch(() => null))
+        ).then((results) => results.filter((r): r is StreakResult => r != null && r.current_streak > 0))
+      : Promise.resolve([] as StreakResult[]);
 
     Promise.all([fetchDayData(date), typesPromise, streaksPromise])
       .then(([result, types, streakResults]) => {
