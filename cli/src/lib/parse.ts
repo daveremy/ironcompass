@@ -27,22 +27,23 @@ export function parseTimestamp(date: string, raw: string): string {
   }
   // ISO string without timezone offset — treat as local time
   if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/.test(raw)) {
-    const time = raw.slice(11, 16);
     const isoDate = raw.slice(0, 10);
-    return appendLocalOffset(isoDate, time);
+    const timePart = raw.slice(11); // HH:MM or HH:MM:SS
+    return appendLocalOffset(isoDate, timePart);
   }
   return raw;
 }
 
-function appendLocalOffset(date: string, hhmm: string): string {
+function appendLocalOffset(date: string, time: string): string {
   const [y, mo, d] = date.split("-").map(Number);
-  const [h, mi] = hhmm.split(":").map(Number);
+  const [h, mi] = time.split(":").map(Number);
   const local = new Date(y, mo - 1, d, h, mi);
   const offset = local.toTimeString().match(/([+-]\d{4})/)?.[1] ?? "+0000";
   const sign = offset[0];
   const hh = offset.slice(1, 3);
   const mm = offset.slice(3, 5);
-  return `${date}T${hhmm}:00${sign}${hh}:${mm}`;
+  const seconds = time.length > 5 ? "" : ":00";
+  return `${date}T${time}${seconds}${sign}${hh}:${mm}`;
 }
 
 export function mergeSupplements(existing: string[], incoming: string[]): string[] {
