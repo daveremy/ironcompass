@@ -39,13 +39,33 @@ describe("parseTimestamp", () => {
     assert.match(result, /^2026-03-07T08:30:00[+-]\d{2}:\d{2}$/);
   });
 
-  it("passes through an ISO 8601 string unchanged", () => {
+  it("passes through an ISO 8601 string with offset unchanged", () => {
     const iso = "2026-03-07T08:30:00-08:00";
     assert.equal(parseTimestamp("2026-03-07", iso), iso);
   });
 
-  it("passes through non-HH:MM strings unchanged", () => {
+  it("passes through an ISO 8601 string with Z unchanged", () => {
     assert.equal(parseTimestamp("2026-03-07", "2026-03-07T14:00:00Z"), "2026-03-07T14:00:00Z");
+  });
+
+  it("adds local offset to ISO 8601 string without timezone", () => {
+    const result = parseTimestamp("2026-03-10", "2026-03-10T07:59:00");
+    assert.match(result, /^2026-03-10T07:59:00[+-]\d{2}:\d{2}$/);
+  });
+
+  it("adds local offset to ISO 8601 string without seconds or timezone", () => {
+    const result = parseTimestamp("2026-03-10", "2026-03-10T07:59");
+    assert.match(result, /^2026-03-10T07:59:00[+-]\d{2}:\d{2}$/);
+  });
+
+  it("preserves seconds when adding offset to ISO string without timezone", () => {
+    const result = parseTimestamp("2026-03-10", "2026-03-10T07:59:30");
+    assert.match(result, /^2026-03-10T07:59:30[+-]\d{2}:\d{2}$/);
+  });
+
+  it("preserves fractional seconds when adding offset to ISO string without timezone", () => {
+    const result = parseTimestamp("2026-03-10", "2026-03-10T07:59:30.123");
+    assert.match(result, /^2026-03-10T07:59:30\.123[+-]\d{2}:\d{2}$/);
   });
 });
 
