@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { fetchDayData, fetchStreak, type DayData, type StreakResult } from "@/lib/queries";
-import { getWorkoutTypes, buildColorMap, buildDisplayNameMap } from "@/lib/workout-types";
+import { getWorkoutTypes, buildTypeLookup, type WorkoutTypeLookup } from "@/lib/workout-types";
 import DayHeader from "./day-header";
 import SectionVitals from "./section-vitals";
 import SectionSleep from "./section-sleep";
@@ -22,11 +22,12 @@ const STREAK_LABELS: Record<string, string> = {
   logging: "days logging",
 };
 
+const STREAK_METRICS = Object.keys(STREAK_LABELS);
+
 export default function DayDetail({ date, backMonth }: { date: string; backMonth?: string }) {
   const [data, setData] = useState<DayData | null>(null);
   const [streaks, setStreaks] = useState<StreakResult[]>([]);
-  const [colorMap, setColorMap] = useState<Record<string, string>>({});
-  const [displayNameMap, setDisplayNameMap] = useState<Record<string, string>>({});
+  const [typeLookup, setTypeLookup] = useState<WorkoutTypeLookup>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,7 +38,7 @@ export default function DayDetail({ date, backMonth }: { date: string; backMonth
 
     const typesPromise = getWorkoutTypes().catch(() => [] as Awaited<ReturnType<typeof getWorkoutTypes>>);
     const streaksPromise = Promise.all(
-      ["alcohol-free", "fasting", "workout", "logging"].map((m) => fetchStreak(m).catch(() => null))
+      STREAK_METRICS.map((m) => fetchStreak(m).catch(() => null))
     ).then((results) => results.filter((r): r is StreakResult => r != null && r.current_streak > 0));
 
     Promise.all([fetchDayData(date), typesPromise, streaksPromise])
@@ -45,8 +46,7 @@ export default function DayDetail({ date, backMonth }: { date: string; backMonth
         if (!controller.signal.aborted) {
           setData(result);
           setStreaks(streakResults);
-          setColorMap(buildColorMap(types));
-          setDisplayNameMap(buildDisplayNameMap(types));
+          setTypeLookup(buildTypeLookup(types));
           setLoading(false);
         }
       })
@@ -95,7 +95,7 @@ export default function DayDetail({ date, backMonth }: { date: string; backMonth
         <SectionFasting data={data!.fasting} />
         <SectionBP data={data!.bloodPressure} />
         <div className="col-span-full">
-          <SectionWorkouts data={data!.workouts} colorMap={colorMap} displayNameMap={displayNameMap} />
+          <SectionWorkouts data={data!.workouts} typeLookup={typeLookup} />
         </div>
         <div className="col-span-full">
           <SectionMeals data={data!.meals} />

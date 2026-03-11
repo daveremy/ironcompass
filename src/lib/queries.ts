@@ -248,6 +248,8 @@ interface StreakConfig {
 const STREAK_MAP: Record<string, StreakConfig> = {
   "alcohol-free": { table: "daily_entries", select: "date, alcohol", pass: (r) => r.alcohol === false, logged: (r) => r.alcohol != null },
   fasting: { table: "fasting", select: "date, compliant", pass: (r) => r.compliant === true, logged: (r) => r.compliant != null },
+  workout: { table: "workouts", select: "date", pass: () => true, logged: () => true },
+  logging: { table: "daily_entries", select: "date", pass: () => true, logged: () => true },
 };
 
 export interface StreakResult {

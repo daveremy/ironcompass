@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { fetchWeekSummaries } from "@/lib/queries";
 import type { WorkoutRow, WeekSummary } from "@/lib/types";
-import { getWorkoutTypes, buildColorMap } from "@/lib/workout-types";
+import { getWorkoutTypes, buildTypeLookup, FALLBACK_COLOR } from "@/lib/workout-types";
 import { getMonday, formatDate, addDays, isSameDay, parseDate, SHORT_DAYS } from "@/lib/date";
 import CalendarHeader from "./calendar-header";
 import CalendarDay from "./calendar-day";
@@ -22,7 +22,12 @@ export default function Calendar({ initialMonth }: { initialMonth?: string } = {
 
   // Fetch workout types once
   useEffect(() => {
-    getWorkoutTypes().then((types) => setColorMap(buildColorMap(types))).catch(() => {});
+    getWorkoutTypes().then((types) => {
+      const lookup = buildTypeLookup(types);
+      const map: Record<string, string> = {};
+      for (const [k, v] of Object.entries(lookup)) map[k] = v.color;
+      setColorMap(map);
+    }).catch(() => {});
   }, []);
 
   // Initialize on client to avoid hydration mismatch; resync when initialMonth changes

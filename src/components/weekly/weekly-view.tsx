@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { getMonday, formatDate, addDays, parseDate, SHORT_DAYS } from "@/lib/date";
 import { fetchWeekData } from "@/lib/queries";
 import type { WeekData, DaySummary } from "@/lib/types";
-import { getWorkoutTypes, buildColorMap, buildDisplayNameMap, FALLBACK_COLOR } from "@/lib/workout-types";
+import { getWorkoutTypes, buildTypeLookup, FALLBACK_COLOR, type WorkoutTypeLookup } from "@/lib/workout-types";
 import WeeklyHeader from "./weekly-header";
 import SectionCard from "@/components/day-detail/section-card";
 import WorkoutTypeBadge from "@/components/ui/workout-type-badge";
@@ -27,17 +27,13 @@ export default function WeeklyView({ date, backMonth }: { date?: string; backMon
   const [monday, setMonday] = useState<Date | null>(null);
   const [hasNavigated, setHasNavigated] = useState(false);
   const [data, setData] = useState<WeekData | null>(null);
-  const [colorMap, setColorMap] = useState<Record<string, string>>({});
-  const [displayNameMap, setDisplayNameMap] = useState<Record<string, string>>({});
+  const [typeLookup, setTypeLookup] = useState<WorkoutTypeLookup>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Fetch workout types once
   useEffect(() => {
-    getWorkoutTypes().then((types) => {
-      setColorMap(buildColorMap(types));
-      setDisplayNameMap(buildDisplayNameMap(types));
-    }).catch(() => {});
+    getWorkoutTypes().then((types) => setTypeLookup(buildTypeLookup(types))).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -157,11 +153,11 @@ export default function WeeklyView({ date, backMonth }: { date?: string; backMon
                             {section.label}
                           </div>
                         )}
-                        <DayCell section={section.key} day={day} colorMap={colorMap} displayNameMap={displayNameMap} />
+                        <DayCell section={section.key} day={day} typeLookup={typeLookup} />
                       </div>
                     ))}
                     <div className="bg-accent/[0.03] px-2 py-2 min-h-[3rem]">
-                      <SummaryCell section={section.key} summary={data.summary} colorMap={colorMap} />
+                      <SummaryCell section={section.key} summary={data.summary} typeLookup={typeLookup} />
                     </div>
                   </div>
                 ))}
@@ -171,7 +167,7 @@ export default function WeeklyView({ date, backMonth }: { date?: string; backMon
 
           {/* Summary cards */}
           <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <WorkoutSectionCard data={data} colorMap={colorMap} displayNameMap={displayNameMap} />
+            <WorkoutSectionCard data={data} typeLookup={typeLookup} />
             <NutritionSectionCard data={data} />
             <SleepSectionCard data={data} />
             <HighlightsCard data={data} />
@@ -184,7 +180,7 @@ export default function WeeklyView({ date, backMonth }: { date?: string; backMon
 
 // ─── Grid Cells ──────────────────────────────────────
 
-function DayCell({ section, day, colorMap, displayNameMap }: { section: SectionKey; day: DaySummary; colorMap: Record<string, string>; displayNameMap: Record<string, string> }) {
+function DayCell({ section, day, typeLookup }: { section: SectionKey; day: DaySummary; typeLookup: WorkoutTypeLookup }) {
   switch (section) {
     case "vitals":
       if (day.weight == null && day.energy == null && day.alcohol == null)
@@ -215,8 +211,8 @@ function DayCell({ section, day, colorMap, displayNameMap }: { section: SectionK
         <div className="flex flex-col gap-1">
           {day.workouts.map((w) => (
             <div key={w.id} className="flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: colorMap[w.type] ?? FALLBACK_COLOR }} />
-              <span className="text-[10px] font-mono text-foreground/80 truncate">{displayNameMap[w.type] ?? w.type}</span>
+              <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: typeLookup[w.type]?.color ?? FALLBACK_COLOR }} />
+              <span className="text-[10px] font-mono text-foreground/80 truncate">{typeLookup[w.type]?.displayName ?? w.type}</span>
               {w.duration_min != null && <span className="text-[10px] font-mono text-muted">{w.duration_min}m</span>}
             </div>
           ))}
@@ -243,7 +239,7 @@ function DayCell({ section, day, colorMap, displayNameMap }: { section: SectionK
   }
 }
 
-function SummaryCell({ section, summary, colorMap }: { section: SectionKey; summary: WeekData["summary"]; colorMap: Record<string, string> }) {
+function SummaryCell({ section, summary, typeLookup }: { section: SectionKey; summary: WeekData["summary"]; typeLookup: WorkoutTypeLookup }) {
   switch (section) {
     case "vitals":
       return (
@@ -269,7 +265,7 @@ function SummaryCell({ section, summary, colorMap }: { section: SectionKey; summ
           <Val v={summary.workouts.total} u="total" />
           <div className="flex flex-wrap gap-1 mt-1">
             {summary.workouts.types.map((t) => (
-              <span key={t} className="w-2 h-2 rounded-full" style={{ backgroundColor: colorMap[t] ?? FALLBACK_COLOR }} />
+              <span key={t} className="w-2 h-2 rounded-full" style={{ backgroundColor: typeLookup[t]?.color ?? FALLBACK_COLOR }} />
             ))}
           </div>
         </div>
@@ -308,7 +304,7 @@ function ExpandToggle({ expanded, onToggle }: { expanded: boolean; onToggle: () 
   );
 }
 
-function WorkoutSectionCard({ data, colorMap, displayNameMap }: { data: WeekData; colorMap: Record<string, string>; displayNameMap: Record<string, string> }) {
+function WorkoutSectionCard({ data, typeLookup }: { data: WeekData; typeLookup: WorkoutTypeLookup }) {
   const [expanded, setExpanded] = useState(false);
   const { summary, days } = data;
   const allWorkouts = days.flatMap((d) => d.workouts.map((w) => ({ ...w, dayDate: d.date })));
@@ -331,15 +327,15 @@ function WorkoutSectionCard({ data, colorMap, displayNameMap }: { data: WeekData
         <ExpandToggle expanded={expanded} onToggle={() => setExpanded(!expanded)} />
       </div>
       <div className="flex flex-wrap gap-1 mb-2">
-        {summary.workouts.types.map((t) => <WorkoutTypeBadge key={t} type={t} color={colorMap[t]} displayName={displayNameMap[t]} />)}
+        {summary.workouts.types.map((t) => <WorkoutTypeBadge key={t} type={t} color={typeLookup[t]?.color} displayName={typeLookup[t]?.displayName} />)}
       </div>
       {expanded && (
         <div className="mt-3 border-t border-border pt-3 space-y-2">
           {allWorkouts.map((w) => (
             <div key={w.id} className="flex items-center gap-2 text-xs font-mono">
               <span className="text-muted w-12">{w.dayDate.slice(5)}</span>
-              <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: colorMap[w.type] ?? FALLBACK_COLOR }} />
-              <span className="text-foreground/80">{displayNameMap[w.type] ?? w.type}</span>
+              <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: typeLookup[w.type]?.color ?? FALLBACK_COLOR }} />
+              <span className="text-foreground/80">{typeLookup[w.type]?.displayName ?? w.type}</span>
               {w.duration_min != null && <span className="text-muted">{w.duration_min}m</span>}
               {w.distance_mi != null && <span className="text-muted">{w.distance_mi}mi</span>}
               {w.calories != null && <span className="text-muted">{w.calories}cal</span>}
