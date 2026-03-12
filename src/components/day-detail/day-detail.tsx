@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { fetchDayData, fetchStreak, type DayData, type StreakResult } from "@/lib/queries";
 import { getWorkoutTypes, buildTypeLookup, type WorkoutTypeLookup } from "@/lib/workout-types";
-import { formatDate } from "@/lib/date";
 import DayHeader from "./day-header";
 import SectionVitals from "./section-vitals";
 import SectionSleep from "./section-sleep";
@@ -38,12 +37,9 @@ export default function DayDetail({ date, backMonth }: { date: string; backMonth
     setError(null);
 
     const typesPromise = getWorkoutTypes().catch(() => [] as Awaited<ReturnType<typeof getWorkoutTypes>>);
-    const isToday = date === formatDate(new Date());
-    const streaksPromise = isToday
-      ? Promise.all(
-          STREAK_METRICS.map((m) => fetchStreak(m).catch(() => null))
-        ).then((results) => results.filter((r): r is StreakResult => r != null && r.current_streak > 0))
-      : Promise.resolve([] as StreakResult[]);
+    const streaksPromise = Promise.all(
+      STREAK_METRICS.map((m) => fetchStreak(m, date).catch(() => null))
+    ).then((results) => results.filter((r): r is StreakResult => r != null && r.current_streak > 0));
 
     Promise.all([fetchDayData(date), typesPromise, streaksPromise])
       .then(([result, types, streakResults]) => {

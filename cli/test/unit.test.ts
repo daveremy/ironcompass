@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { parseNum, parseList, sparse } from "../src/lib/parse.ts";
-import { todayDate, daysAgo } from "../src/lib/date.ts";
+import { todayDate, daysAgo, parseDate, daysBeforeDate } from "../src/lib/date.ts";
 import { throwIfError } from "../src/db.ts";
 
 describe("parseNum", () => {
@@ -112,6 +112,63 @@ describe("daysAgo", () => {
     const result = daysAgo(365);
     assert.match(result, /^\d{4}-\d{2}-\d{2}$/);
     assert.ok(result < todayDate());
+  });
+});
+
+describe("parseDate", () => {
+  it("parses valid date", () => {
+    const d = parseDate("2026-03-12");
+    assert.equal(d.getFullYear(), 2026);
+    assert.equal(d.getMonth(), 2); // March = 2
+    assert.equal(d.getDate(), 12);
+  });
+
+  it("rejects invalid format", () => {
+    assert.throws(() => parseDate("2026/03/12"), /Invalid date format/);
+  });
+
+  it("rejects impossible date (Feb 31)", () => {
+    assert.throws(() => parseDate("2026-02-31"), /not a real calendar date/);
+  });
+
+  it("rejects impossible date (Apr 31)", () => {
+    assert.throws(() => parseDate("2026-04-31"), /not a real calendar date/);
+  });
+
+  it("accepts Feb 28 in non-leap year", () => {
+    const d = parseDate("2025-02-28");
+    assert.equal(d.getDate(), 28);
+  });
+
+  it("rejects Feb 29 in non-leap year", () => {
+    assert.throws(() => parseDate("2025-02-29"), /not a real calendar date/);
+  });
+
+  it("accepts Feb 29 in leap year", () => {
+    const d = parseDate("2024-02-29");
+    assert.equal(d.getDate(), 29);
+  });
+});
+
+describe("daysBeforeDate", () => {
+  it("returns same date for 0 days", () => {
+    assert.equal(daysBeforeDate("2026-03-12", 0), "2026-03-12");
+  });
+
+  it("returns previous day for 1 day", () => {
+    assert.equal(daysBeforeDate("2026-03-12", 1), "2026-03-11");
+  });
+
+  it("crosses month boundary", () => {
+    assert.equal(daysBeforeDate("2026-03-01", 1), "2026-02-28");
+  });
+
+  it("crosses year boundary", () => {
+    assert.equal(daysBeforeDate("2026-01-01", 1), "2025-12-31");
+  });
+
+  it("handles large offset", () => {
+    assert.equal(daysBeforeDate("2026-03-12", 365), "2025-03-12");
   });
 });
 

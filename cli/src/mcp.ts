@@ -56,9 +56,10 @@ server.registerTool("ironcompass_query_streak", {
   description: "Get current streak for a health metric",
   inputSchema: z.object({
     metric: z.enum(VALID_STREAKS).describe("Streak metric"),
+    as_of_date: z.string().optional().describe("Compute streak as of this date (YYYY-MM-DD). Defaults to today."),
   }),
-}, async ({ metric }) => {
-  const result = await computeStreak(metric);
+}, async ({ metric, as_of_date }) => {
+  const result = await computeStreak(metric, as_of_date);
   return textResult({ ...result, dashboard_url: calendarUrl() });
 });
 

@@ -133,6 +133,31 @@ describe("ironcompass MCP server", () => {
       assert.ok(workout.inputSchema.properties.start_time, "workout should have start_time property");
       assert.ok(workout.inputSchema.properties.end_time, "workout should have end_time property");
       assert.ok(workout.inputSchema.properties.source, "workout should have source property");
+
+      // streak schema has as_of_date property (#69)
+      const streak = tools.find((t: any) => t.name === "ironcompass_query_streak");
+      assert.ok(streak.inputSchema.properties.as_of_date, "streak should have as_of_date property");
+    } finally {
+      proc.kill();
+    }
+  });
+
+  it("streak with invalid as_of_date returns validation error", async () => {
+    const proc = spawnMcp();
+    try {
+      const response = await initAndSend(proc, {
+        jsonrpc: "2.0",
+        id: 3,
+        method: "tools/call",
+        params: {
+          name: "ironcompass_query_streak",
+          arguments: { metric: "workout", as_of_date: "2026-02-31" },
+        },
+      });
+
+      assert.ok(response.result, "Expected result");
+      const content = response.result.content[0].text;
+      assert.ok(content.includes("not a real calendar date"), `Expected validation error, got: ${content}`);
     } finally {
       proc.kill();
     }

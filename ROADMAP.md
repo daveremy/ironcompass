@@ -88,15 +88,15 @@ Source integrations (Apple Health, Oura, Hevy, Strava) live in LifeOS, not IronC
 |---|---|---|
 | #49 | Track personal records and longest streaks | todo |
 | #52 | Use `display_name` from workout_types table in UI | **done** |
-| #55 | Add prev/next day navigation to daily detail view | todo |
+| #55 | Add prev/next day navigation to daily detail view | **done** |
 | #56 | Package IronCompass as a Claude Code plugin with companion skill | **done** |
 | #58 | Weekly planning & visualization (TrainingPeaks-style) | todo |
 | #59 | Add `walk` workout type | **done** |
 | #60 | Body composition section should include weight | **done** |
 | #61 | Fasting card should show fast duration prominently | **done** |
 | #65 | Streak badges on daily detail view | **done** |
-| #67 | Logging streak should check all tables, not just daily_entries | todo |
-| #69 | Show streak badges on historical daily detail pages | todo |
+| #67 | Logging streak should check all tables, not just daily_entries | **done** |
+| #69 | Show streak badges on historical daily detail pages | **done** |
 | #62 | Sleep card: composite score from multiple sources | todo |
 
 ## Testing

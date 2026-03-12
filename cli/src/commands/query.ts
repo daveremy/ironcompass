@@ -1,7 +1,7 @@
 import { Command } from "commander";
 import { fail, success } from "../output.js";
 import { getSupabase, throwIfError } from "../db.js";
-import { todayDate, daysAgo } from "../lib/date.js";
+import { todayDate, daysAgo, parseDate, daysBeforeDate } from "../lib/date.js";
 import { parseNum } from "../lib/parse.js";
 import { dayUrl, calendarUrl } from "../lib/urls.js";
 import type { Database } from "../types/database.js";
@@ -336,64 +336,116 @@ export const VALID_STREAKS = ["alcohol-free", "fasting", "workout", "logging"] a
 type StreakName = (typeof VALID_STREAKS)[number];
 
 interface StreakConfig {
-  table: TableName;
-  select: string;
+  table?: TableName;
+  select?: string;
   pass: (row: any) => boolean;
   logged: (row: any) => boolean;
   queryFilter?: (query: any) => any;
+  queryFn?: (sb: ReturnType<typeof getSupabase>, rangeStart: string, rangeEnd: string) => Promise<any[]>;
+}
+
+async function fetchLoggingDates(sb: ReturnType<typeof getSupabase>, rangeStart: string, rangeEnd: string): Promise<any[]> {
+  const tables: Array<{ table: TableName; filter?: (q: any) => any }> = [
+    { table: "daily_entries" },
+    { table: "sleep" },
+    { table: "fasting" },
+    { table: "blood_pressure" },
+    { table: "workouts" },
+    { table: "meals" },
+    { table: "pullups" },
+    { table: "supplements" },
+    { table: "body_composition" },
+    { table: "custom_metrics" },
+  ];
+
+  const results = await Promise.all(
+    tables.map(({ table, filter }) => {
+      let q = sb.from(table).select("date").gte("date", rangeStart).lte("date", rangeEnd).order("date", { ascending: false }).limit(10000);
+      if (filter) q = filter(q);
+      return q;
+    })
+  );
+
+  const dates = new Set<string>();
+  for (const res of results) {
+    if (res.error) throw new Error(`Supabase query failed: ${res.error.message}`);
+    for (const row of (res.data ?? []) as any[]) {
+      dates.add(row.date);
+    }
+  }
+
+  return [...dates].sort().reverse().map((d) => ({ date: d }));
 }
 
 const STREAK_MAP: Record<StreakName, StreakConfig> = {
   "alcohol-free": { table: "daily_entries", select: "date, alcohol", pass: (r) => r.alcohol === false, logged: (r) => r.alcohol != null },
   fasting: { table: "fasting", select: "date, compliant", pass: (r) => r.compliant === true, logged: (r) => r.compliant != null },
   workout: { table: "workouts", select: "date", pass: () => true, logged: () => true, queryFilter: (q: any) => q.or("completed.is.null,completed.eq.true") },
-  logging: { table: "daily_entries", select: "date", pass: () => true, logged: () => true },
+  logging: { pass: () => true, logged: () => true, queryFn: fetchLoggingDates },
 };
 
-export async function computeStreak(metric: string) {
+export async function computeStreak(metric: string, asOfDate?: string) {
   if (!VALID_STREAKS.includes(metric as StreakName)) {
     throw new Error(`Unknown streak "${metric}". Valid streaks: ${VALID_STREAKS.join(", ")}`);
   }
 
+  // Validate asOfDate if provided
+  if (asOfDate) parseDate(asOfDate);
+
   const cfg = STREAK_MAP[metric as StreakName];
   const today = todayDate();
+  const refDate = asOfDate ?? today;
+  const refDateObj = parseDate(refDate);
+  const isRefToday = refDate === today;
   const sb = getSupabase();
 
-  // Use date range instead of row limit to handle multi-row tables (e.g. workouts)
-  const rangeStart = daysAgo(365);
-  let query = sb
-    .from(cfg.table)
-    .select(cfg.select)
-    .gte("date", rangeStart)
-    .lte("date", today)
-    .order("date", { ascending: false });
-  if (cfg.queryFilter) query = cfg.queryFilter(query);
-  const { data, error } = await query;
-  if (error) throw new Error(`Supabase query failed: ${error.message}`);
-  const rows = data ?? [];
+  function daysBack(n: number): string {
+    const d = new Date(refDateObj.getTime());
+    d.setDate(d.getDate() - n);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  }
+
+  const rangeStart = daysBack(365);
+
+  let rows: any[];
+  if (cfg.queryFn) {
+    rows = await cfg.queryFn(sb, rangeStart, refDate);
+  } else {
+    let query = sb
+      .from(cfg.table!)
+      .select(cfg.select!)
+      .gte("date", rangeStart)
+      .lte("date", refDate)
+      .order("date", { ascending: false });
+    if (cfg.queryFilter) query = cfg.queryFilter(query);
+    const { data, error } = await query;
+    if (error) throw new Error(`Supabase query failed: ${error.message}`);
+    rows = data ?? [];
+  }
 
   const rowsByDate = new Map<string, any>();
   for (const r of rows as any[]) {
     if (!rowsByDate.has(r.date)) rowsByDate.set(r.date, r);
   }
 
-  const earliest = rangeStart;
   let count = 0;
   let offset = 0;
-  // Skip today if not yet logged (no row, or relevant field still null)
-  const todayRow = rowsByDate.get(daysAgo(0));
-  if (!todayRow || !cfg.logged(todayRow)) offset = 1;
+  // Only skip the reference date when it's today and not yet logged
+  if (isRefToday) {
+    const refRow = rowsByDate.get(refDate);
+    if (!refRow || !cfg.logged(refRow)) offset = 1;
+  }
 
   for (let i = offset; ; i++) {
-    const d = daysAgo(i);
-    if (d < earliest) break;
+    const d = daysBack(i);
+    if (d < rangeStart) break;
     const row = rowsByDate.get(d);
     if (row && cfg.pass(row)) count++;
     else break;
   }
 
-  const startDate = count > 0 ? daysAgo(count + offset - 1) : null;
-  return { metric, current_streak: count, start_date: startDate, as_of: today };
+  const startDate = count > 0 ? daysBack(count + offset - 1) : null;
+  return { metric, current_streak: count, start_date: startDate, as_of: refDate };
 }
 
 // --- register commands ---
@@ -440,9 +492,10 @@ export function registerQueryCommands(program: Command): void {
     .command("streak")
     .description("Current streak for a metric")
     .argument("<metric>", `Metric (${VALID_STREAKS.join(", ")})`)
-    .action(async (metric) => {
+    .option("--as-of <date>", "Compute streak as of this date (YYYY-MM-DD)")
+    .action(async (metric, opts) => {
       try {
-        success(await computeStreak(metric));
+        success(await computeStreak(metric, opts.asOf));
       } catch (e: any) {
         fail(e.message ?? String(e));
       }
