@@ -96,6 +96,7 @@ Source integrations (Apple Health, Oura, Hevy, Strava) live in LifeOS, not IronC
 | #61 | Fasting card should show fast duration prominently | **done** |
 | #65 | Streak badges on daily detail view | **done** |
 | #67 | Logging streak should check all tables, not just daily_entries | todo |
+| #69 | Show streak badges on historical daily detail pages | todo |
 | #62 | Sleep card: composite score from multiple sources | todo |
 
 ## Testing
