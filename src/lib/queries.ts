@@ -1,5 +1,5 @@
 import { supabase } from "./supabase";
-import { formatDate, addDays, getMonday } from "./date";
+import { formatDate, addDays, parseDate, getMonday } from "./date";
 import type {
   BloodPressureRow,
   BodyCompositionRow,
@@ -239,18 +239,52 @@ export async function fetchTrend(metric: string, days: number): Promise<TrendRes
 // ─── Streaks ─────────────────────────────────────────────
 
 interface StreakConfig {
-  table: TableName;
-  select: string;
+  table?: TableName;
+  select?: string;
   pass: (row: any) => boolean;
   logged: (row: any) => boolean;
   queryFilter?: (query: any) => any;
+  queryFn?: (rangeStart: string, rangeEnd: string) => Promise<any[]>;
+}
+
+async function fetchLoggingDates(rangeStart: string, rangeEnd: string): Promise<any[]> {
+  const tables: Array<{ table: TableName; filter?: (q: any) => any }> = [
+    { table: "daily_entries" },
+    { table: "sleep" },
+    { table: "fasting" },
+    { table: "blood_pressure" },
+    { table: "workouts" },
+    { table: "meals" },
+    { table: "pullups" },
+    { table: "supplements" },
+    { table: "body_composition" },
+    { table: "custom_metrics" },
+  ];
+
+  const results = await Promise.all(
+    tables.map(({ table, filter }) => {
+      let q = supabase.from(table).select("date").gte("date", rangeStart).lte("date", rangeEnd).order("date", { ascending: false }).limit(10000);
+      if (filter) q = filter(q);
+      return q;
+    })
+  );
+
+  const dates = new Set<string>();
+  for (const res of results) {
+    if (res.error) throw new Error(`Query failed: ${res.error.message}`);
+    for (const row of (res.data ?? []) as any[]) {
+      dates.add(row.date);
+    }
+  }
+
+  return [...dates].sort().reverse().map((d) => ({ date: d }));
 }
 
 const STREAK_MAP: Record<string, StreakConfig> = {
   "alcohol-free": { table: "daily_entries", select: "date, alcohol", pass: (r) => r.alcohol === false, logged: (r) => r.alcohol != null },
   fasting: { table: "fasting", select: "date, compliant", pass: (r) => r.compliant === true, logged: (r) => r.compliant != null },
   workout: { table: "workouts", select: "date", pass: () => true, logged: () => true, queryFilter: (q: any) => q.or("completed.is.null,completed.eq.true") },
-  logging: { table: "daily_entries", select: "date", pass: () => true, logged: () => true },
+  logging: { pass: () => true, logged: () => true, queryFn: fetchLoggingDates },
 };
 
 export interface StreakResult {
@@ -259,24 +293,35 @@ export interface StreakResult {
   start_date: string | null;
 }
 
-export async function fetchStreak(metric: string): Promise<StreakResult> {
+export async function fetchStreak(metric: string, asOfDate?: string): Promise<StreakResult> {
   const cfg = STREAK_MAP[metric];
   if (!cfg) throw new Error(`Unknown streak: ${metric}`);
 
   const today = todayDate();
-  const rangeStart = daysAgoDate(365);
+  const refDate = asOfDate ?? today;
+  const refDateObj = parseDate(refDate);
+  const rangeStart = formatDate(addDays(refDateObj, -365));
+  const isRefToday = refDate === today;
 
-  let query = supabase
-    .from(cfg.table)
-    .select(cfg.select)
-    .gte("date", rangeStart)
-    .lte("date", today)
-    .order("date", { ascending: false });
-  if (cfg.queryFilter) query = cfg.queryFilter(query);
-  const { data, error } = await query;
+  function daysBack(n: number): string {
+    return formatDate(addDays(new Date(refDateObj.getTime()), -n));
+  }
 
-  if (error) throw new Error(`Query failed: ${error.message}`);
-  const rows = data ?? [];
+  let rows: any[];
+  if (cfg.queryFn) {
+    rows = await cfg.queryFn(rangeStart, refDate);
+  } else {
+    let query = supabase
+      .from(cfg.table!)
+      .select(cfg.select!)
+      .gte("date", rangeStart)
+      .lte("date", refDate)
+      .order("date", { ascending: false });
+    if (cfg.queryFilter) query = cfg.queryFilter(query);
+    const { data, error } = await query;
+    if (error) throw new Error(`Query failed: ${error.message}`);
+    rows = data ?? [];
+  }
 
   const rowsByDate = new Map<string, any>();
   for (const r of rows as any[]) {
@@ -285,19 +330,21 @@ export async function fetchStreak(metric: string): Promise<StreakResult> {
 
   let count = 0;
   let offset = 0;
-  // Skip today if not yet logged (no row, or relevant field still null)
-  const todayRow = rowsByDate.get(daysAgoDate(0));
-  if (!todayRow || !cfg.logged(todayRow)) offset = 1;
+  // Only skip the reference date when it's today and not yet logged
+  if (isRefToday) {
+    const refRow = rowsByDate.get(daysBack(0));
+    if (!refRow || !cfg.logged(refRow)) offset = 1;
+  }
 
   for (let i = offset; ; i++) {
-    const d = daysAgoDate(i);
+    const d = daysBack(i);
     if (d < rangeStart) break;
     const row = rowsByDate.get(d);
     if (row && cfg.pass(row)) count++;
     else break;
   }
 
-  const startDate = count > 0 ? daysAgoDate(count + offset - 1) : null;
+  const startDate = count > 0 ? daysBack(count + offset - 1) : null;
   return { metric, current_streak: count, start_date: startDate };
 }
 

@@ -168,6 +168,20 @@ describe("ironcompass CLI", () => {
     assert.ok(stdout.includes("--source"), "missing --source option");
   });
 
+  it("streak --help shows --as-of option", () => {
+    const { stdout, exitCode } = run("streak", "--help");
+    assert.equal(exitCode, 0);
+    assert.ok(stdout.includes("--as-of"), "missing --as-of option");
+  });
+
+  it("streak --as-of with invalid date fails with validation error", () => {
+    const { stderr, exitCode } = run("streak", "workout", "--as-of", "2026-02-31");
+    assert.equal(exitCode, 1);
+    const parsed = JSON.parse(stderr);
+    assert.equal(parsed.ok, false);
+    assert.ok(parsed.error.includes("not a real calendar date"));
+  });
+
   // empty supplements rejected
   it("log supplements --taken ',' fails with empty list error", () => {
     const { stderr, exitCode } = run("log", "supplements", "--taken", ",");
