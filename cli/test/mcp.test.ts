@@ -69,6 +69,10 @@ const EXPECTED_TOOLS = [
   "ironcompass_delete_metric",
   "ironcompass_delete_meal",
   "ironcompass_delete_workout",
+  "ironcompass_set_plan",
+  "ironcompass_get_plan",
+  "ironcompass_instantiate_plan",
+  "ironcompass_query_plan",
 ];
 
 describe("ironcompass MCP server", () => {
@@ -98,7 +102,7 @@ describe("ironcompass MCP server", () => {
     }
   });
 
-  it("lists all 19 tools with correct schemas", async () => {
+  it("lists all 23 tools with correct schemas", async () => {
     const proc = spawnMcp();
     try {
       const response = await initAndSend(proc, {
@@ -111,8 +115,8 @@ describe("ironcompass MCP server", () => {
       assert.ok(response.result, "Expected result");
       const tools = response.result.tools;
 
-      // All 19 tools present
-      assert.equal(tools.length, 19);
+      // All 23 tools present
+      assert.equal(tools.length, 23);
       const names = tools.map((t: any) => t.name).sort();
       assert.deepEqual(names, [...EXPECTED_TOOLS].sort());
 

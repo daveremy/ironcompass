@@ -117,6 +117,17 @@ export type Database = {
           updated_at: string | null
         }
       }
+      weekly_plan: {
+        Row: {
+          id: string
+          name: string
+          active: boolean
+          schedule: Record<string, unknown>
+          targets: Record<string, unknown> | null
+          created_at: string | null
+          updated_at: string | null
+        }
+      }
       workout_types: {
         Row: {
           name: string
@@ -153,10 +164,39 @@ export type ViewType = "calendar" | "daily" | "metrics" | "weekly";
 
 export interface WeekSummary {
   workoutCount: number;
+  plannedCount: number;
   avgSleepHours: number | null;
   weightDelta: number | null;
   fastingCompliant: number;
   fastingTotal: number;
+}
+
+export interface PlannedWorkout {
+  type: string;
+  duration_min?: number;
+  notes?: string;
+}
+
+export type DayOfWeek = "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday";
+
+export interface WeeklyPlanSchedule {
+  [key: string]: PlannedWorkout[];
+}
+
+export interface WeeklyPlanTargets {
+  total_sessions?: number;
+  total_duration_min?: number;
+  by_type?: Record<string, { sessions?: number; duration_min?: number }>;
+}
+
+export interface WeeklyPlan {
+  id: string;
+  name: string;
+  active: boolean;
+  schedule: WeeklyPlanSchedule;
+  targets: WeeklyPlanTargets | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface DaySummary {

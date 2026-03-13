@@ -3,6 +3,7 @@
 import { Command } from "commander";
 import { registerLogCommands } from "./commands/log.js";
 import { registerQueryCommands } from "./commands/query.js";
+import { registerPlanCommands } from "./commands/plan.js";
 
 const program = new Command();
 
@@ -13,5 +14,6 @@ program
 
 registerLogCommands(program);
 registerQueryCommands(program);
+registerPlanCommands(program);
 
 program.parseAsync();

@@ -188,6 +188,28 @@ describe("ironcompass CLI", () => {
     assert.ok(parsed.error.includes("not a real calendar date"));
   });
 
+  // plan commands
+  it("plan --help lists subcommands", () => {
+    const { stdout, exitCode } = run("plan", "--help");
+    assert.equal(exitCode, 0);
+    assert.ok(stdout.includes("show"), "missing show subcommand");
+    assert.ok(stdout.includes("set"), "missing set subcommand");
+    assert.ok(stdout.includes("instantiate"), "missing instantiate subcommand");
+    assert.ok(stdout.includes("status"), "missing status subcommand");
+  });
+
+  it("plan set --help shows --schedule option", () => {
+    const { stdout, exitCode } = run("plan", "set", "--help");
+    assert.equal(exitCode, 0);
+    assert.ok(stdout.includes("--schedule"), "missing --schedule option");
+  });
+
+  it("plan status --help shows --week option", () => {
+    const { stdout, exitCode } = run("plan", "status", "--help");
+    assert.equal(exitCode, 0);
+    assert.ok(stdout.includes("--week"), "missing --week option");
+  });
+
   // empty supplements rejected
   it("log supplements --taken ',' fails with empty list error", () => {
     const { stderr, exitCode } = run("log", "supplements", "--taken", ",");

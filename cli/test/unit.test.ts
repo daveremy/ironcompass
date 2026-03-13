@@ -4,6 +4,7 @@ import { parseNum, parseList, sparse } from "../src/lib/parse.ts";
 import { todayDate, daysAgo, parseDate, daysBeforeDate } from "../src/lib/date.ts";
 import { throwIfError } from "../src/db.ts";
 import { scanStreaks, computeMaxRecord, computeMinRecord, computeDailySumMax } from "../src/lib/streak-helpers.ts";
+import type { WorkoutStatus } from "../src/commands/plan.ts";
 
 describe("parseNum", () => {
   it("returns undefined for undefined input", () => {
@@ -342,5 +343,47 @@ describe("throwIfError", () => {
       () => throwIfError({ error: { message: "connection refused" } }),
       /Database error: connection refused/,
     );
+  });
+});
+
+// --- Workout status helper (pure logic, no DB) ---
+
+function getWorkoutStatus(w: { planned: boolean | null; completed: boolean | null; date: string }, today: string): WorkoutStatus {
+  const isPlannedOnly = w.planned === true && w.completed === false;
+  if (isPlannedOnly) {
+    return w.date < today ? "skipped" : "scheduled";
+  }
+  return "completed";
+}
+
+describe("getWorkoutStatus", () => {
+  const today = "2026-03-13";
+
+  it("planned=true, completed=false, future date => scheduled", () => {
+    assert.equal(getWorkoutStatus({ planned: true, completed: false, date: "2026-03-14" }, today), "scheduled");
+  });
+
+  it("planned=true, completed=false, today => scheduled", () => {
+    assert.equal(getWorkoutStatus({ planned: true, completed: false, date: "2026-03-13" }, today), "scheduled");
+  });
+
+  it("planned=true, completed=false, past date => skipped", () => {
+    assert.equal(getWorkoutStatus({ planned: true, completed: false, date: "2026-03-12" }, today), "skipped");
+  });
+
+  it("planned=null, completed=null => completed", () => {
+    assert.equal(getWorkoutStatus({ planned: null, completed: null, date: "2026-03-12" }, today), "completed");
+  });
+
+  it("planned=true, completed=true => completed", () => {
+    assert.equal(getWorkoutStatus({ planned: true, completed: true, date: "2026-03-12" }, today), "completed");
+  });
+
+  it("planned=true, completed=null => completed", () => {
+    assert.equal(getWorkoutStatus({ planned: true, completed: null, date: "2026-03-12" }, today), "completed");
+  });
+
+  it("planned=false, completed=null => completed", () => {
+    assert.equal(getWorkoutStatus({ planned: false, completed: null, date: "2026-03-12" }, today), "completed");
   });
 });

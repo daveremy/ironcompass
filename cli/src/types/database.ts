@@ -375,6 +375,36 @@ export type Database = {
           },
         ]
       }
+      weekly_plan: {
+        Row: {
+          id: string
+          name: string
+          active: boolean
+          schedule: Record<string, unknown>
+          targets: Record<string, unknown> | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          name?: string
+          active?: boolean
+          schedule: Record<string, unknown>
+          targets?: Record<string, unknown> | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          name?: string
+          active?: boolean
+          schedule?: Record<string, unknown>
+          targets?: Record<string, unknown> | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       workout_types: {
         Row: {
           name: string

@@ -15,7 +15,11 @@ import type {
   WorkoutRow,
   WeekData,
   WeekSummary,
+  WeeklyPlan,
+  WeeklyPlanSchedule,
+  WeeklyPlanTargets,
 } from "./types";
+import type { WorkoutStatus } from "./workout-status";
 
 // ─── Day Data ────────────────────────────────────────────
 
@@ -571,7 +575,8 @@ export async function fetchWeekData(startDate: string): Promise<WeekData> {
     if (s.apple_score != null) appleScores.push(s.apple_score);
   }
 
-  const workoutTypes = [...new Set(workouts.map((w) => w.type))];
+  const completedWorkouts = workouts.filter((w) => !(w.planned === true && w.completed === false));
+  const workoutTypes = [...new Set(completedWorkouts.map((w) => w.type))];
   const fastingCompliant = fasting.filter((f) => f.compliant === true).length;
   const pullupTotal = pullups.reduce((sum, p) => sum + p.total_count, 0);
   const mealDays = [...mealTotalsByDate.values()];
@@ -590,7 +595,7 @@ export async function fetchWeekData(startDate: string): Promise<WeekData> {
       daysLogged: allDates.size,
       weight: { first: weightFirst, last: weightLast, delta: weightDelta },
       sleep: { avgHours: avg(sleepHours), avgOura: avg(ouraScores), avgApple: avg(appleScores) },
-      workouts: { total: workouts.length, types: workoutTypes },
+      workouts: { total: completedWorkouts.length, types: workoutTypes },
       meals: {
         avgDailyProtein: mealDays.length > 0 ? avg(mealDays.map((d) => d.protein)) : null,
         avgDailyCalories: mealDays.length > 0 ? avg(mealDays.map((d) => d.calories)) : null,
@@ -639,15 +644,20 @@ export async function fetchWeekSummaries(
   function ensure(monday: string): WeekSummary {
     let s = summaries.get(monday);
     if (!s) {
-      s = { workoutCount: 0, avgSleepHours: null, weightDelta: null, fastingCompliant: 0, fastingTotal: 0 };
+      s = { workoutCount: 0, plannedCount: 0, avgSleepHours: null, weightDelta: null, fastingCompliant: 0, fastingTotal: 0 };
       summaries.set(monday, s);
     }
     return s;
   }
 
-  // Workouts
+  // Workouts — count completed vs planned-only in a single pass
   for (const w of workouts) {
-    ensure(mondayOf(w.date)).workoutCount++;
+    const s = ensure(mondayOf(w.date));
+    if (w.planned === true && w.completed === false) {
+      s.plannedCount++;
+    } else {
+      s.workoutCount++;
+    }
   }
 
   // Sleep — group hours by week for averaging
@@ -690,5 +700,149 @@ export async function fetchWeekSummaries(
   }
 
   return summaries;
+}
+
+// ─── Weekly Plan ─────────────────────────────────────
+
+export async function fetchWeeklyPlan(): Promise<WeeklyPlan | null> {
+  const { data, error } = await supabase
+    .from("weekly_plan")
+    .select("*")
+    .eq("active", true)
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) return null;
+  return data as unknown as WeeklyPlan | null;
+}
+
+const DAYS_OF_WEEK_Q = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"] as const;
+
+function addDaysStr(dateStr: string, n: number): string {
+  const d = new Date(dateStr + "T00:00:00");
+  d.setDate(d.getDate() + n);
+  return formatDate(d);
+}
+
+export interface PlanDayStatus {
+  date: string;
+  day: string;
+  planned: Array<{ type: string; duration_min?: number; notes?: string; status: WorkoutStatus }>;
+  actual: Array<{ type: string; duration_min: number | null; id: string }>;
+  unplanned: Array<{ type: string; duration_min: number | null; id: string }>;
+}
+
+export interface PlanTargetProgress {
+  total_sessions?: { target: number; actual: number; remaining: number };
+  total_duration_min?: { target: number; actual: number; remaining: number };
+  by_type?: Record<string, {
+    sessions?: { target: number; actual: number };
+    duration_min?: { target: number; actual: number };
+  }>;
+}
+
+export interface PlanStatusResult {
+  week_start: string;
+  template: WeeklyPlanSchedule | null;
+  days: PlanDayStatus[];
+  targets: PlanTargetProgress | null;
+  summary: { planned: number; completed: number; skipped: number; remaining: number };
+}
+
+export async function fetchPlanStatus(weekStart: string): Promise<PlanStatusResult | null> {
+  const plan = await fetchWeeklyPlan();
+  if (!plan) return null;
+
+  const today = formatDate(new Date());
+  const weekEnd = addDaysStr(weekStart, 6);
+
+  const { data: workouts, error } = await supabase
+    .from("workouts")
+    .select("*")
+    .gte("date", weekStart)
+    .lte("date", weekEnd)
+    .order("date")
+    .order("start_time", { ascending: true, nullsFirst: false })
+    .order("created_at");
+
+  if (error) return null;
+  const allWorkouts = (workouts ?? []) as WorkoutRow[];
+
+  const days: PlanDayStatus[] = [];
+  for (let i = 0; i < 7; i++) {
+    const dateStr = addDaysStr(weekStart, i);
+    const dayName = DAYS_OF_WEEK_Q[i];
+    const dayWorkouts = allWorkouts.filter((w) => w.date === dateStr);
+
+    // Split: all planned rows (including completed-in-place) vs non-planned actuals
+    const allPlannedRows = dayWorkouts.filter((w) => w.planned === true);
+    const nonPlannedActual = dayWorkouts.filter((w) => w.planned !== true);
+
+    // Match planned to actuals one-to-one by type (supports duplicate types)
+    const matchedActualIds = new Set<string>();
+    const planned = allPlannedRows.map((pw) => {
+      // Completed in-place — the planned row itself was marked completed
+      if (pw.completed === true) {
+        return { type: pw.type, duration_min: pw.duration_min ?? undefined, notes: pw.notes ?? undefined, status: "completed" as WorkoutStatus };
+      }
+      // Still pending — look for a matching non-planned actual
+      const match = nonPlannedActual.find((a) => a.type === pw.type && !matchedActualIds.has(a.id));
+      if (match) matchedActualIds.add(match.id);
+      const status: WorkoutStatus = match ? "completed" : (dateStr < today ? "skipped" : "scheduled");
+      return { type: pw.type, duration_min: pw.duration_min ?? undefined, notes: pw.notes ?? undefined, status };
+    });
+
+    const unplanned = nonPlannedActual.filter((a) => !matchedActualIds.has(a.id)).map((a) => ({
+      type: a.type, duration_min: a.duration_min, id: a.id,
+    }));
+
+    const matchedActual = nonPlannedActual.filter((a) => matchedActualIds.has(a.id)).map((a) => ({
+      type: a.type, duration_min: a.duration_min, id: a.id,
+    }));
+
+    days.push({ date: dateStr, day: dayName, planned, actual: matchedActual, unplanned });
+  }
+
+  // Targets
+  let targets: PlanTargetProgress | null = null;
+  if (plan.targets) {
+    const completedWorkouts = allWorkouts.filter((w) => !(w.planned === true && w.completed === false));
+    const totalActual = completedWorkouts.length;
+    const totalDuration = completedWorkouts.reduce((s, w) => s + (w.duration_min ?? 0), 0);
+
+    targets = {};
+    if (plan.targets.total_sessions != null) {
+      targets.total_sessions = { target: plan.targets.total_sessions, actual: totalActual, remaining: Math.max(0, plan.targets.total_sessions - totalActual) };
+    }
+    if (plan.targets.total_duration_min != null) {
+      targets.total_duration_min = { target: plan.targets.total_duration_min, actual: totalDuration, remaining: Math.max(0, plan.targets.total_duration_min - totalDuration) };
+    }
+    if (plan.targets.by_type) {
+      targets.by_type = Object.fromEntries(
+        Object.entries(plan.targets.by_type).map(([type, t]) => {
+          const typeWorkouts = completedWorkouts.filter((w) => w.type === type);
+          return [type, {
+            ...(t.sessions != null ? { sessions: { target: t.sessions, actual: typeWorkouts.length } } : {}),
+            ...(t.duration_min != null ? { duration_min: { target: t.duration_min, actual: typeWorkouts.reduce((s, w) => s + (w.duration_min ?? 0), 0) } } : {}),
+          }];
+        }),
+      );
+    }
+  }
+
+  const allPlanned = days.flatMap((d) => d.planned);
+  return {
+    week_start: weekStart,
+    template: plan.schedule,
+    days,
+    targets,
+    summary: {
+      planned: allPlanned.length,
+      completed: allPlanned.filter((p) => p.status === "completed").length,
+      skipped: allPlanned.filter((p) => p.status === "skipped").length,
+      remaining: allPlanned.filter((p) => p.status === "scheduled").length,
+    },
+  };
 }
 

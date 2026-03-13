@@ -4,10 +4,12 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getMonday, formatDate, addDays, parseDate, SHORT_DAYS } from "@/lib/date";
-import { fetchWeekData } from "@/lib/queries";
+import { fetchWeekData, fetchPlanStatus, type PlanStatusResult } from "@/lib/queries";
+import { getWorkoutStatus, type WorkoutStatus } from "@/lib/workout-status";
 import type { WeekData, DaySummary } from "@/lib/types";
 import { getWorkoutTypes, buildTypeLookup, FALLBACK_COLOR, type WorkoutTypeLookup } from "@/lib/workout-types";
 import WeeklyHeader from "./weekly-header";
+import PlanProgressCard from "./plan-progress-card";
 import SectionCard from "@/components/day-detail/section-card";
 import WorkoutTypeBadge from "@/components/ui/workout-type-badge";
 
@@ -27,6 +29,7 @@ export default function WeeklyView({ date, backMonth }: { date?: string; backMon
   const [monday, setMonday] = useState<Date | null>(null);
   const [hasNavigated, setHasNavigated] = useState(false);
   const [data, setData] = useState<WeekData | null>(null);
+  const [planStatus, setPlanStatus] = useState<PlanStatusResult | null>(null);
   const [typeLookup, setTypeLookup] = useState<WorkoutTypeLookup>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -61,10 +64,13 @@ export default function WeeklyView({ date, backMonth }: { date?: string; backMon
     setLoading(true);
     setError(null);
     try {
-      const result = await fetchWeekData(start);
-      if (!signal.aborted) { setData(result); setLoading(false); }
+      const [result, plan] = await Promise.all([
+        fetchWeekData(start),
+        fetchPlanStatus(start).catch(() => null),
+      ]);
+      if (!signal.aborted) { setData(result); setPlanStatus(plan); setLoading(false); }
     } catch (err) {
-      if (!signal.aborted) { setData(null); setError(err instanceof Error ? err.message : "Failed to load"); setLoading(false); }
+      if (!signal.aborted) { setData(null); setPlanStatus(null); setError(err instanceof Error ? err.message : "Failed to load"); setLoading(false); }
     }
   }, []);
 
@@ -153,11 +159,11 @@ export default function WeeklyView({ date, backMonth }: { date?: string; backMon
                             {section.label}
                           </div>
                         )}
-                        <DayCell section={section.key} day={day} typeLookup={typeLookup} />
+                        <DayCell section={section.key} day={day} typeLookup={typeLookup} today={today} />
                       </div>
                     ))}
                     <div className="bg-accent/[0.03] px-2 py-2 min-h-[3rem]">
-                      <SummaryCell section={section.key} summary={data.summary} typeLookup={typeLookup} />
+                      <SummaryCell section={section.key} summary={data.summary} typeLookup={typeLookup} planStatus={planStatus} />
                     </div>
                   </div>
                 ))}
@@ -167,7 +173,8 @@ export default function WeeklyView({ date, backMonth }: { date?: string; backMon
 
           {/* Summary cards */}
           <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <WorkoutSectionCard data={data} typeLookup={typeLookup} />
+            {planStatus && <PlanProgressCard planStatus={planStatus} typeLookup={typeLookup} />}
+            <WorkoutSectionCard data={data} typeLookup={typeLookup} planStatus={planStatus} />
             <NutritionSectionCard data={data} />
             <SleepSectionCard data={data} />
             <HighlightsCard data={data} />
@@ -180,7 +187,7 @@ export default function WeeklyView({ date, backMonth }: { date?: string; backMon
 
 // ─── Grid Cells ──────────────────────────────────────
 
-function DayCell({ section, day, typeLookup }: { section: SectionKey; day: DaySummary; typeLookup: WorkoutTypeLookup }) {
+function DayCell({ section, day, typeLookup, today }: { section: SectionKey; day: DaySummary; typeLookup: WorkoutTypeLookup; today: string }) {
   switch (section) {
     case "vitals":
       if (day.weight == null && day.energy == null && day.alcohol == null)
@@ -209,13 +216,24 @@ function DayCell({ section, day, typeLookup }: { section: SectionKey; day: DaySu
       if (day.workouts.length === 0) return <Empty />;
       return (
         <div className="flex flex-col gap-1">
-          {day.workouts.map((w) => (
-            <div key={w.id} className="flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: typeLookup[w.type]?.color ?? FALLBACK_COLOR }} />
-              <span className="text-[10px] font-mono text-foreground/80 truncate">{typeLookup[w.type]?.displayName ?? w.type}</span>
-              {w.duration_min != null && <span className="text-[10px] font-mono text-muted">{w.duration_min}m</span>}
-            </div>
-          ))}
+          {day.workouts.map((w) => {
+            const status = getWorkoutStatus(w, today);
+            const isPlannedOnly = status === "scheduled" || status === "skipped";
+            const isSkipped = status === "skipped";
+            return (
+              <div key={w.id} className={`flex items-center gap-1 ${isSkipped ? "opacity-40 line-through" : ""}`}>
+                <span
+                  className="w-1.5 h-1.5 rounded-full shrink-0"
+                  style={isPlannedOnly && !isSkipped
+                    ? { border: `1px solid ${typeLookup[w.type]?.color ?? FALLBACK_COLOR}`, backgroundColor: "transparent" }
+                    : { backgroundColor: isSkipped ? "#737373" : (typeLookup[w.type]?.color ?? FALLBACK_COLOR) }
+                  }
+                />
+                <span className="text-[10px] font-mono text-foreground/80 truncate">{typeLookup[w.type]?.displayName ?? w.type}</span>
+                {w.duration_min != null && <span className="text-[10px] font-mono text-muted">{w.duration_min}m</span>}
+              </div>
+            );
+          })}
         </div>
       );
     case "nutrition":
@@ -239,7 +257,7 @@ function DayCell({ section, day, typeLookup }: { section: SectionKey; day: DaySu
   }
 }
 
-function SummaryCell({ section, summary, typeLookup }: { section: SectionKey; summary: WeekData["summary"]; typeLookup: WorkoutTypeLookup }) {
+function SummaryCell({ section, summary, typeLookup, planStatus }: { section: SectionKey; summary: WeekData["summary"]; typeLookup: WorkoutTypeLookup; planStatus?: PlanStatusResult | null }) {
   switch (section) {
     case "vitals":
       return (
@@ -258,11 +276,16 @@ function SummaryCell({ section, summary, typeLookup }: { section: SectionKey; su
           {summary.sleep.avgOura != null && <div className="text-[10px] font-mono text-muted">Oura {Math.round(summary.sleep.avgOura)} avg</div>}
         </div>
       );
-    case "workouts":
-      if (summary.workouts.total === 0) return <Empty />;
+    case "workouts": {
+      const completedCount = summary.workouts.total;
+      const plannedTotal = planStatus?.summary.planned ?? 0;
+      if (completedCount === 0 && plannedTotal === 0) return <Empty />;
       return (
         <div>
-          <Val v={summary.workouts.total} u="total" />
+          {plannedTotal > 0
+            ? <Val v={`${planStatus?.summary.completed ?? completedCount}/${plannedTotal}`} u="done" />
+            : <Val v={completedCount} u="total" />
+          }
           <div className="flex flex-wrap gap-1 mt-1">
             {summary.workouts.types.map((t) => (
               <span key={t} className="w-2 h-2 rounded-full" style={{ backgroundColor: typeLookup[t]?.color ?? FALLBACK_COLOR }} />
@@ -270,6 +293,7 @@ function SummaryCell({ section, summary, typeLookup }: { section: SectionKey; su
           </div>
         </div>
       );
+    }
     case "nutrition":
       if (summary.meals.avgDailyProtein == null && summary.meals.avgDailyCalories == null) return <Empty />;
       return (
@@ -304,7 +328,7 @@ function ExpandToggle({ expanded, onToggle }: { expanded: boolean; onToggle: () 
   );
 }
 
-function WorkoutSectionCard({ data, typeLookup }: { data: WeekData; typeLookup: WorkoutTypeLookup }) {
+function WorkoutSectionCard({ data, typeLookup, planStatus }: { data: WeekData; typeLookup: WorkoutTypeLookup; planStatus?: PlanStatusResult | null }) {
   const [expanded, setExpanded] = useState(false);
   const { summary, days } = data;
   const allWorkouts = days.flatMap((d) => d.workouts.map((w) => ({ ...w, dayDate: d.date })));
@@ -321,7 +345,10 @@ function WorkoutSectionCard({ data, typeLookup }: { data: WeekData; typeLookup: 
     <SectionCard title="Workouts" accent="#3b82f6">
       <div className="flex items-baseline justify-between mb-2">
         <p className="text-sm font-mono text-foreground">
-          {summary.workouts.total} workout{summary.workouts.total !== 1 ? "s" : ""}
+          {planStatus
+            ? <>{planStatus.summary.completed}/{planStatus.summary.planned} completed</>
+            : <>{summary.workouts.total} workout{summary.workouts.total !== 1 ? "s" : ""}</>
+          }
           <span className="text-muted ml-1">&middot; {summary.workouts.types.length} type{summary.workouts.types.length !== 1 ? "s" : ""}</span>
         </p>
         <ExpandToggle expanded={expanded} onToggle={() => setExpanded(!expanded)} />

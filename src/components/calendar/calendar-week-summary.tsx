@@ -18,8 +18,13 @@ export default function CalendarWeekSummary({ monday, month, summary }: Calendar
     >
       {summary ? (
         <>
-          {summary.workoutCount > 0 && (
-            <span className="text-xs font-mono font-bold text-accent">{summary.workoutCount}w</span>
+          {(summary.workoutCount > 0 || summary.plannedCount > 0) && (
+            <span className="text-xs font-mono font-bold text-accent">
+              {summary.plannedCount > 0
+                ? `${summary.workoutCount}/${summary.workoutCount + summary.plannedCount}w`
+                : `${summary.workoutCount}w`
+              }
+            </span>
           )}
           {summary.avgSleepHours != null && (
             <span className="text-[10px] font-mono text-purple-400">{summary.avgSleepHours.toFixed(1)}h</span>
