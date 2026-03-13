@@ -156,6 +156,7 @@ export default function DayDetail({ date, backMonth }: { date: string; backMonth
           {prBadges.map((pr) => (
             <span
               key={pr.key}
+              data-testid={`pr-badge-${pr.key}`}
               className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono bg-amber-500/15 text-amber-400 border border-amber-500/30"
             >
               <span className="font-bold">PR</span>

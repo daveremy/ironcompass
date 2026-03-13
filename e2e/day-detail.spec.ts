@@ -85,6 +85,20 @@ test.describe("Day Detail View", () => {
     await expect(meals).toContainText("395");
   });
 
+  test("PR badges render on day with record values", async ({ page }) => {
+    await page.goto(`/?view=daily&date=${TEST_DATE}`);
+    await page.waitForSelector("[data-testid=day-detail]");
+
+    // Seeded data is at year 2099, so values should be unique enough to set PRs
+    // Check that at least one PR badge appears
+    const prBadges = page.locator("[data-testid^=pr-badge-]");
+    await expect(prBadges.first()).toBeVisible();
+
+    // Each badge should contain "PR" text
+    const firstBadge = prBadges.first();
+    await expect(firstBadge).toContainText("PR");
+  });
+
   test("empty date shows 'Not logged' for empty sections", async ({ page }) => {
     await page.goto(`/?view=daily&date=${TEST_DATE_EMPTY}`);
     await page.waitForSelector("[data-testid=day-detail]");

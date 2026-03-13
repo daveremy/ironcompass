@@ -28,7 +28,7 @@ export default function StreakCard({ title, accent, streak, startDate, label, lo
             <div className="flex items-center gap-2">
               <p className="text-xs font-mono text-foreground">{label}</p>
               {isBest && (
-                <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold tracking-wider bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                <span data-testid="streak-best-badge" className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold tracking-wider bg-amber-500/20 text-amber-400 border border-amber-500/30">
                   BEST
                 </span>
               )}
@@ -37,7 +37,7 @@ export default function StreakCard({ title, accent, streak, startDate, label, lo
               <p className="text-[10px] font-mono text-muted mt-0.5">Since {startDate}</p>
             )}
             {showLongest && longestStreakStart && (
-              <p className="text-[10px] font-mono text-muted/60 mt-0.5">
+              <p data-testid="streak-longest" className="text-[10px] font-mono text-muted/60 mt-0.5">
                 Best: {longestStreak} days ({longestStreakStart})
               </p>
             )}

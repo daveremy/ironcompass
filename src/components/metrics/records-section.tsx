@@ -17,7 +17,7 @@ export default function RecordsSection({ records }: RecordsSectionProps) {
   });
 
   return (
-    <div className="mt-8 animate-slide-in">
+    <div data-testid="records-section" className="mt-8 animate-slide-in">
       <h2 className="font-mono text-sm font-bold tracking-[0.15em] uppercase text-foreground mb-4">
         Personal Records
       </h2>

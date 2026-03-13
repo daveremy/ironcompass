@@ -20,6 +20,35 @@ test.describe("Metrics Dashboard", () => {
     await expect(page.getByText("Fasting Compliance")).toBeVisible();
   });
 
+  test("personal records section renders with record cards", async ({ page }) => {
+    await page.goto("/?view=metrics");
+    await page.waitForSelector("[data-testid=metrics-dashboard]");
+
+    const section = page.locator("[data-testid=records-section]");
+    await expect(section).toBeVisible();
+    await expect(section.getByText("Personal Records")).toBeVisible();
+
+    // At least one record card should be present (real data exists)
+    const cards = section.locator("[data-testid^=section-]");
+    await expect(cards.first()).toBeVisible();
+  });
+
+  test("streak cards show longest streak info", async ({ page }) => {
+    await page.goto("/?view=metrics");
+    await page.waitForSelector("[data-testid=metrics-dashboard]");
+
+    // Streak cards should be visible
+    await expect(page.getByText("Alcohol-Free")).toBeVisible();
+    await expect(page.getByText("Fasting Compliance")).toBeVisible();
+
+    // At least one streak card should show either "BEST" badge or "Best: N days" text
+    const bestBadges = page.locator("[data-testid=streak-best-badge]");
+    const longestTexts = page.locator("[data-testid=streak-longest]");
+    const bestCount = await bestBadges.count();
+    const longestCount = await longestTexts.count();
+    expect(bestCount + longestCount).toBeGreaterThan(0);
+  });
+
   test("range selector switches between periods", async ({ page }) => {
     await page.goto("/?view=metrics");
     await page.waitForSelector("[data-testid=metrics-dashboard]");
