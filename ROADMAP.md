@@ -35,7 +35,7 @@ Expose IronCompass as MCP tools so Claude can call them directly from LifeOS ses
 | #8 | Log tools (all `ironcompass_log_*` tools) | **done** |
 | #9 | Query tools (all `ironcompass_query_*` tools) | **done** |
 | #10 | Register MCP server in LifeOS Claude config | **done** |
-| #27 | Set up local Supabase test environment with seed data | todo |
+| #27 | Set up local Supabase test environment with seed data | closed |
 | #30 | Generic custom metrics table + `ironcompass_log_metric` tool (coffee, water, etc.) | **done** |
 
 ## Phase 3: Web Dashboard — #11
@@ -48,7 +48,7 @@ The visual layer. Calendar view + metrics. Deploy to Vercel.
 | #13 | Day detail view (meals, metrics, notes on click) | **done** |
 | #14 | Metrics dashboard (weight trend, sleep, streaks, BP) | **done** |
 | #15 | Weekly summary view | **done** |
-| #16 | Deploy to Vercel | todo |
+| #16 | Deploy to Vercel | closed |
 
 ### Design decision: multi-view navigation
 All dashboard views (monthly calendar, weekly, daily) share a single page with `?view=` query param routing (`?view=daily&date=2026-03-06`). This makes every view deep-linkable so the AI assistant can open specific views by constructing a URL. Shell nav tabs and CalendarDay onClick will drive these params starting in #13.
@@ -86,7 +86,7 @@ Source integrations (Apple Health, Oura, Hevy, Strava) live in LifeOS, not IronC
 
 | Issue | Task | Status |
 |---|---|---|
-| #49 | Track personal records and longest streaks | todo |
+| #49 | Track personal records and longest streaks | **done** |
 | #52 | Use `display_name` from workout_types table in UI | **done** |
 | #55 | Add prev/next day navigation to daily detail view | **done** |
 | #56 | Package IronCompass as a Claude Code plugin with companion skill | **done** |
@@ -98,12 +98,14 @@ Source integrations (Apple Health, Oura, Hevy, Strava) live in LifeOS, not IronC
 | #67 | Logging streak should check all tables, not just daily_entries | **done** |
 | #69 | Show streak badges on historical daily detail pages | **done** |
 | #62 | Sleep card: composite score from multiple sources | todo |
+| #68 | Add sickness/illness tracking | todo |
 
 ## Testing
 
 | Issue | Task | Status |
 |---|---|---|
-| #53 | Expand e2e test coverage: weekly details, edge cases, mobile | todo |
+| #53 | Expand e2e test coverage: weekly details, edge cases, mobile | closed |
+| #72 | Improve e2e test coverage (day nav, streaks, charts, weekly sections) | **done** |
 
 ## Future Ideas
 - Apple Shortcuts for quick logging from iPhone
