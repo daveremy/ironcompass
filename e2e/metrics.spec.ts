@@ -6,10 +6,10 @@ test.describe("Metrics Dashboard", () => {
     await page.waitForSelector("[data-testid=metrics-dashboard]");
 
     // Check that key metric card titles are present
-    await expect(page.getByText("Weight")).toBeVisible();
-    await expect(page.getByText("Sleep")).toBeVisible();
-    await expect(page.getByText("Pullups")).toBeVisible();
-    await expect(page.getByText("Protein")).toBeVisible();
+    await expect(page.getByText("Weight", { exact: true })).toBeVisible();
+    await expect(page.getByText("Sleep", { exact: true })).toBeVisible();
+    await expect(page.getByText("Pullups", { exact: true })).toBeVisible();
+    await expect(page.getByText("Protein", { exact: true })).toBeVisible();
   });
 
   test("streak cards render", async ({ page }) => {
