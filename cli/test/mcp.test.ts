@@ -54,6 +54,7 @@ const EXPECTED_TOOLS = [
   "ironcompass_query_week",
   "ironcompass_query_trend",
   "ironcompass_query_streak",
+  "ironcompass_query_records",
   "ironcompass_log_daily",
   "ironcompass_log_sleep",
   "ironcompass_log_fasting",
@@ -97,7 +98,7 @@ describe("ironcompass MCP server", () => {
     }
   });
 
-  it("lists all 18 tools with correct schemas", async () => {
+  it("lists all 19 tools with correct schemas", async () => {
     const proc = spawnMcp();
     try {
       const response = await initAndSend(proc, {
@@ -110,8 +111,8 @@ describe("ironcompass MCP server", () => {
       assert.ok(response.result, "Expected result");
       const tools = response.result.tools;
 
-      // All 18 tools present
-      assert.equal(tools.length, 18);
+      // All 19 tools present
+      assert.equal(tools.length, 19);
       const names = tools.map((t: any) => t.name).sort();
       assert.deepEqual(names, [...EXPECTED_TOOLS].sort());
 

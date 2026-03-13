@@ -6,9 +6,14 @@ interface StreakCardProps {
   streak: number | null;
   startDate: string | null;
   label: string;
+  longestStreak?: number | null;
+  longestStreakStart?: string | null;
 }
 
-export default function StreakCard({ title, accent, streak, startDate, label }: StreakCardProps) {
+export default function StreakCard({ title, accent, streak, startDate, label, longestStreak, longestStreakStart }: StreakCardProps) {
+  const isBest = longestStreak != null && longestStreak > 0 && streak != null && streak >= longestStreak;
+  const showLongest = longestStreak != null && longestStreak > 0 && streak != null && longestStreak > streak;
+
   return (
     <SectionCard title={title} accent={accent} empty={streak === null}>
       {streak !== null && (
@@ -20,9 +25,21 @@ export default function StreakCard({ title, accent, streak, startDate, label }: 
             {streak}
           </div>
           <div>
-            <p className="text-xs font-mono text-foreground">{label}</p>
+            <div className="flex items-center gap-2">
+              <p className="text-xs font-mono text-foreground">{label}</p>
+              {isBest && (
+                <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold tracking-wider bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                  BEST
+                </span>
+              )}
+            </div>
             {startDate && (
               <p className="text-[10px] font-mono text-muted mt-0.5">Since {startDate}</p>
+            )}
+            {showLongest && longestStreakStart && (
+              <p className="text-[10px] font-mono text-muted/60 mt-0.5">
+                Best: {longestStreak} days ({longestStreakStart})
+              </p>
             )}
           </div>
         </div>

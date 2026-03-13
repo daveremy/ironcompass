@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { fetchDayData, fetchStreak, type DayData, type StreakResult } from "@/lib/queries";
+import { useState, useEffect, useMemo } from "react";
+import { fetchDayData, fetchStreak, fetchPersonalRecords, type DayData, type StreakResult, type PersonalRecord } from "@/lib/queries";
 import { getWorkoutTypes, buildTypeLookup, type WorkoutTypeLookup } from "@/lib/workout-types";
 import DayHeader from "./day-header";
 import SectionVitals from "./section-vitals";
@@ -24,9 +24,63 @@ const STREAK_LABELS: Record<string, string> = {
 
 const STREAK_METRICS = Object.keys(STREAK_LABELS);
 
+// PR value extraction from day data
+function extractPRValues(data: DayData): Record<string, number | null> {
+  const vals: Record<string, number | null> = {};
+
+  vals.pullups_max = data.pullups?.total_count ?? null;
+  vals.sleep_hours = data.sleep?.hours ?? null;
+  vals.sleep_oura = data.sleep?.oura_score ?? null;
+  vals.weight_low = data.daily?.weight ?? null;
+  vals.body_fat_low = data.bodyComp?.body_fat_pct ?? null;
+
+  const completedWorkouts = data.workouts.filter((w) => w.completed !== false);
+  const durations = completedWorkouts.filter((w) => w.duration_min != null).map((w) => w.duration_min!);
+  vals.workout_longest = durations.length > 0 ? Math.max(...durations) : null;
+
+  const hikes = completedWorkouts.filter((w) => w.type === "hike");
+  const hikeDists = hikes.filter((w) => w.distance_mi != null).map((w) => w.distance_mi!);
+  vals.hike_distance = hikeDists.length > 0 ? Math.max(...hikeDists) : null;
+  const hikeElevs = hikes.filter((w) => w.elevation_ft != null).map((w) => w.elevation_ft!);
+  vals.hike_elevation = hikeElevs.length > 0 ? Math.max(...hikeElevs) : null;
+
+  const runs = completedWorkouts.filter((w) => w.type === "run");
+  const runDists = runs.filter((w) => w.distance_mi != null).map((w) => w.distance_mi!);
+  vals.run_distance = runDists.length > 0 ? Math.max(...runDists) : null;
+
+  const mealsWithProtein = data.meals.filter((m) => m.protein_g != null);
+  vals.protein_daily = mealsWithProtein.length > 0 ? mealsWithProtein.reduce((s, m) => s + m.protein_g!, 0) : null;
+
+  const mealsWithCals = data.meals.filter((m) => m.calories != null);
+  vals.calories_daily = mealsWithCals.length > 0 ? mealsWithCals.reduce((s, m) => s + m.calories!, 0) : null;
+
+  return vals;
+}
+
+const MIN_TYPE_RECORDS = new Set(["weight_low", "body_fat_low"]);
+
+function computePRBadges(data: DayData, records: PersonalRecord[]): PersonalRecord[] {
+  if (records.length === 0) return [];
+  const dayVals = extractPRValues(data);
+  const badges: PersonalRecord[] = [];
+
+  for (const rec of records) {
+    const dayVal = dayVals[rec.key];
+    if (dayVal == null) continue;
+    if (MIN_TYPE_RECORDS.has(rec.key)) {
+      if (dayVal <= rec.value) badges.push(rec);
+    } else {
+      if (dayVal >= rec.value) badges.push(rec);
+    }
+  }
+
+  return badges;
+}
+
 export default function DayDetail({ date, backMonth }: { date: string; backMonth?: string }) {
   const [data, setData] = useState<DayData | null>(null);
   const [streaks, setStreaks] = useState<StreakResult[]>([]);
+  const [records, setRecords] = useState<PersonalRecord[]>([]);
   const [typeLookup, setTypeLookup] = useState<WorkoutTypeLookup>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -60,6 +114,18 @@ export default function DayDetail({ date, backMonth }: { date: string; backMonth
     return () => controller.abort();
   }, [date]);
 
+  // Fetch records once (not dependent on date)
+  useEffect(() => {
+    fetchPersonalRecords()
+      .then((result) => setRecords(result.records))
+      .catch(() => setRecords([]));
+  }, []);
+
+  const prBadges = useMemo(() => {
+    if (!data || records.length === 0) return [];
+    return computePRBadges(data, records);
+  }, [data, records]);
+
   if (loading) return <LoadingSkeleton date={date} backMonth={backMonth} />;
 
   if (error) {
@@ -76,7 +142,7 @@ export default function DayDetail({ date, backMonth }: { date: string; backMonth
   return (
     <div data-testid="day-detail" className="animate-slide-in">
       <DayHeader date={date} backMonth={backMonth} />
-      {streaks.length > 0 && (
+      {(streaks.length > 0 || prBadges.length > 0) && (
         <div className="flex flex-wrap gap-2 mb-3">
           {streaks.map((s) => (
             <span
@@ -85,6 +151,15 @@ export default function DayDetail({ date, backMonth }: { date: string; backMonth
             >
               <span className="font-bold">{s.current_streak}</span>
               <span className="text-accent/70">{STREAK_LABELS[s.metric] ?? s.metric}</span>
+            </span>
+          ))}
+          {prBadges.map((pr) => (
+            <span
+              key={pr.key}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono bg-amber-500/15 text-amber-400 border border-amber-500/30"
+            >
+              <span className="font-bold">PR</span>
+              <span className="text-amber-400/70">{pr.label}</span>
             </span>
           ))}
         </div>
