@@ -32,6 +32,8 @@ export async function logWorkout(date: string, type: string, fields: { duration_
   await ensureDailyEntry(date);
   const normalized = {
     ...fields,
+    planned: fields.planned ?? null,
+    completed: fields.completed ?? null,
     start_time: fields.start_time ? parseTimestamp(date, fields.start_time) : undefined,
     end_time: fields.end_time ? parseTimestamp(date, fields.end_time) : undefined,
     source: fields.source ?? "manual",

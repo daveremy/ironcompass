@@ -126,6 +126,7 @@ export default function Calendar({ initialMonth }: { initialMonth?: string } = {
   }, [workouts]);
 
   const today = useMemo(() => new Date(), []);
+  const todayStr = useMemo(() => formatDate(today), [today]);
 
   if (!currentMonth) {
     return <LoadingSkeleton />;
@@ -210,6 +211,7 @@ export default function Calendar({ initialMonth }: { initialMonth?: string } = {
                       colorMap={colorMap}
                       isCurrentMonth={date.getMonth() === currentMonth.getMonth()}
                       isToday={isSameDay(date, today)}
+                      today={todayStr}
                       onClick={() => router.push(`/?view=daily&date=${key}&month=${formatDate(currentMonth)}`)}
                     />
                   </div>

@@ -8,6 +8,7 @@ import { getWorkoutTypes } from "./lib/workout-types.js";
 import { deleteRowById } from "./db.js";
 import { todayDate } from "./lib/date.js";
 import { dayUrl, calendarUrl } from "./lib/urls.js";
+import { setPlan, getPlan, instantiatePlan, queryPlanStatus } from "./commands/plan.js";
 
 const server = new McpServer({ name: "ironcompass", version: "0.1.0" });
 
@@ -281,6 +282,60 @@ server.registerTool("ironcompass_delete_workout", {
 }, async ({ id }) => {
   const deleted = await deleteRowById("workouts", id);
   return textResult({ deleted, dashboard_url: dayUrl(deleted.date) });
+});
+
+// --- Plan tools ---
+
+server.registerTool("ironcompass_set_plan", {
+  title: "Set Weekly Plan",
+  description: "Set or replace the active weekly training plan template with schedule and optional targets",
+  inputSchema: z.object({
+    name: z.string().optional().describe("Plan name (default: 'default')"),
+    schedule: z.record(z.string(), z.array(z.object({
+      type: z.string(),
+      duration_min: z.number().optional(),
+      notes: z.string().optional(),
+    }))).describe("Schedule: keys are days of week (monday-sunday), values are arrays of planned workouts"),
+    targets: z.object({
+      total_sessions: z.number().optional().describe("Target total workout sessions per week"),
+      total_duration_min: z.number().optional().describe("Target total workout minutes per week"),
+      by_type: z.record(z.string(), z.object({
+        sessions: z.number().optional(),
+        duration_min: z.number().optional(),
+      })).optional().describe("Per-type targets"),
+    }).optional().describe("Weekly targets"),
+  }),
+}, async ({ name, schedule, targets }) => {
+  return textResult(await setPlan(schedule as any, { name, targets: targets as any }));
+});
+
+server.registerTool("ironcompass_get_plan", {
+  title: "Get Weekly Plan",
+  description: "Get the active weekly training plan template",
+  inputSchema: z.object({}),
+}, async () => {
+  const plan = await getPlan();
+  return textResult(plan ?? { message: "No active plan" });
+});
+
+server.registerTool("ironcompass_instantiate_plan", {
+  title: "Instantiate Plan",
+  description: "Create planned workout rows for a specific week from the active plan template. Idempotent — skips dates that already have planned workouts.",
+  inputSchema: z.object({
+    week_start: z.string().optional().describe("Monday of the week (YYYY-MM-DD). Defaults to current week."),
+  }),
+}, async ({ week_start }) => {
+  return textResult(await instantiatePlan(week_start ?? undefined));
+});
+
+server.registerTool("ironcompass_query_plan", {
+  title: "Plan Status",
+  description: "Get plan-vs-actual workout status for a week, including target progress",
+  inputSchema: z.object({
+    week_start: z.string().optional().describe("Monday of the week (YYYY-MM-DD). Defaults to current week."),
+  }),
+}, async ({ week_start }) => {
+  return textResult(await queryPlanStatus(week_start ?? undefined));
 });
 
 const transport = new StdioServerTransport();

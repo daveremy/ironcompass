@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { formatDate } from "@/lib/date";
 import { fetchDayData, fetchStreak, fetchPersonalRecords, type DayData, type StreakResult, type PersonalRecord } from "@/lib/queries";
 import { getWorkoutTypes, buildTypeLookup, type WorkoutTypeLookup } from "@/lib/workout-types";
 import DayHeader from "./day-header";
@@ -84,6 +85,7 @@ export default function DayDetail({ date, backMonth }: { date: string; backMonth
   const [typeLookup, setTypeLookup] = useState<WorkoutTypeLookup>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const today = useMemo(() => formatDate(new Date()), []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -171,7 +173,7 @@ export default function DayDetail({ date, backMonth }: { date: string; backMonth
         <SectionFasting data={data!.fasting} />
         <SectionBP data={data!.bloodPressure} />
         <div className="col-span-full">
-          <SectionWorkouts data={data!.workouts} typeLookup={typeLookup} />
+          <SectionWorkouts data={data!.workouts} typeLookup={typeLookup} today={today} />
         </div>
         <div className="col-span-full">
           <SectionMeals data={data!.meals} />

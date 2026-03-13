@@ -5,6 +5,7 @@ import { todayDate, daysAgo, parseDate, daysBeforeDate } from "../lib/date.js";
 import { parseNum } from "../lib/parse.js";
 import { dayUrl, calendarUrl } from "../lib/urls.js";
 import { scanStreaks, computeDailySumMax } from "../lib/streak-helpers.js";
+import { getPlan, queryPlanStatus, getMondayOfWeek } from "./plan.js";
 import type { Database } from "../types/database.js";
 
 type TableName = keyof Database["public"]["Tables"];
@@ -37,6 +38,44 @@ export async function fetchDay(date: string) {
   results.forEach(throwIfError);
   const [daily, sleep, fasting, bp, workouts, meals, pullups, supplements, bodycomp, customMetrics] = results;
 
+  // Include plan context if active plan exists
+  let today_plan = undefined;
+  let week_progress = undefined;
+  try {
+    const plan = await getPlan();
+    if (plan) {
+      const dayOfWeek = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+      const d = new Date(date + "T00:00:00");
+      const dayName = dayOfWeek[d.getDay()];
+      const daySchedule = plan.schedule[dayName] ?? [];
+
+      if (daySchedule.length > 0) {
+        const allWorkouts = (workouts.data ?? []) as any[];
+        const completedPlanned = allWorkouts.filter((w: any) => w.planned === true && w.completed === true);
+        const nonPlannedActual = allWorkouts.filter((w: any) => w.planned !== true);
+        const matchedIds = new Set<string>();
+        today_plan = daySchedule.map((pw: any) => {
+          // Check completed-in-place first, then non-planned actuals
+          const inPlace = completedPlanned.find((a: any) => a.type === pw.type && !matchedIds.has(a.id));
+          if (inPlace) { matchedIds.add(inPlace.id); return { ...pw, status: "completed" }; }
+          const match = nonPlannedActual.find((a: any) => a.type === pw.type && !matchedIds.has(a.id));
+          if (match) matchedIds.add(match.id);
+          return {
+            ...pw,
+            status: match ? "completed" : (date < todayDate() ? "skipped" : "scheduled"),
+          };
+        });
+      }
+
+      // Get week progress for the queried date's week (not necessarily current week)
+      const weekStart = getMondayOfWeek(date);
+      const planStatus = await queryPlanStatus(weekStart, plan);
+      week_progress = planStatus.summary;
+    }
+  } catch {
+    // Plan features are optional — don't fail the whole query
+  }
+
   return {
     date,
     dashboard_url: dayUrl(date),
@@ -50,6 +89,8 @@ export async function fetchDay(date: string) {
     supplements: supplements.data ?? null,
     body_composition: bodycomp.data ?? null,
     custom_metrics: customMetrics.data ?? [],
+    ...(today_plan ? { today_plan } : {}),
+    ...(week_progress ? { week_progress } : {}),
   };
 }
 
@@ -141,6 +182,17 @@ export async function fetchWeek() {
     };
   }
 
+  // Include plan status if active plan exists
+  let plan_status = undefined;
+  try {
+    const plan = await getPlan();
+    if (plan) {
+      plan_status = await queryPlanStatus(undefined, plan);
+    }
+  } catch {
+    // Plan features are optional
+  }
+
   return {
     start,
     end,
@@ -179,6 +231,7 @@ export async function fetchWeek() {
       days: pullupRows.length,
     },
     custom_metrics: customMetricsSummary,
+    ...(plan_status ? { plan_status } : {}),
   };
 }
 

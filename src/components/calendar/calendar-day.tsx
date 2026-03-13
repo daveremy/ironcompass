@@ -1,4 +1,5 @@
 import type { WorkoutRow } from "@/lib/types";
+import { getWorkoutStatus, type WorkoutStatus } from "@/lib/workout-status";
 import { FALLBACK_COLOR } from "@/lib/workout-types";
 
 interface CalendarDayProps {
@@ -7,11 +8,36 @@ interface CalendarDayProps {
   colorMap: Record<string, string>;
   isCurrentMonth: boolean;
   isToday: boolean;
+  today: string;
   onClick: () => void;
 }
 
-function WorkoutDot({ type, colorMap }: { type: string; colorMap: Record<string, string> }) {
+function WorkoutDot({ type, colorMap, status }: { type: string; colorMap: Record<string, string>; status: WorkoutStatus }) {
   const color = colorMap[type] ?? FALLBACK_COLOR;
+
+  if (status === "skipped") {
+    return (
+      <span
+        className="w-2 h-2 rounded-full shrink-0 opacity-30"
+        style={{ backgroundColor: "#737373" }}
+      />
+    );
+  }
+
+  if (status === "scheduled") {
+    return (
+      <span
+        className="w-2 h-2 rounded-full shrink-0"
+        style={{
+          border: `1.5px solid ${color}`,
+          backgroundColor: "transparent",
+          boxShadow: `0 0 4px ${color}44`,
+        }}
+      />
+    );
+  }
+
+  // completed or unplanned
   return (
     <span
       className="w-2 h-2 rounded-full shrink-0"
@@ -29,13 +55,21 @@ export default function CalendarDay({
   colorMap,
   isCurrentMonth,
   isToday,
+  today,
   onClick,
 }: CalendarDayProps) {
   const day = date.getDate();
   const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-  const isRest = isCurrentMonth && workouts.length === 0;
-  const showOverflow = workouts.length > 3;
-  const visibleWorkouts = workouts.slice(0, showOverflow ? 2 : 3);
+
+  // Filter: for display purposes, separate completed/actual from planned-only
+  const completedWorkouts = workouts.filter((w) => !(w.planned === true && w.completed === false));
+  const plannedOnlyWorkouts = workouts.filter((w) => w.planned === true && w.completed === false);
+
+  // Show completed first, then planned-only
+  const orderedWorkouts = [...completedWorkouts, ...plannedOnlyWorkouts];
+  const isRest = isCurrentMonth && orderedWorkouts.length === 0;
+  const showOverflow = orderedWorkouts.length > 3;
+  const visibleWorkouts = orderedWorkouts.slice(0, showOverflow ? 2 : 3);
 
   return (
     <button
@@ -62,11 +96,11 @@ export default function CalendarDay({
 
       <div className="flex items-center gap-1 mt-auto pt-1">
         {visibleWorkouts.map((w) => (
-          <WorkoutDot key={w.id} type={w.type} colorMap={colorMap} />
+          <WorkoutDot key={w.id} type={w.type} colorMap={colorMap} status={getWorkoutStatus(w, today)} />
         ))}
         {showOverflow && (
           <span className="text-[9px] font-mono text-muted leading-none">
-            +{workouts.length - 2}
+            +{orderedWorkouts.length - 2}
           </span>
         )}
         {isRest && (

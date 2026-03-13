@@ -26,7 +26,7 @@ export function getSupabase(): SupabaseClient<Database> {
   return _client;
 }
 
-type TableName = Exclude<keyof Database["public"]["Tables"], "workout_types">;
+type TableName = Exclude<keyof Database["public"]["Tables"], "workout_types" | "weekly_plan">;
 
 export function throwIfError({ error }: { error: any }) {
   if (error) throw new Error(`Database error: ${error.message}`);
