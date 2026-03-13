@@ -99,6 +99,40 @@ test.describe("Day Detail View", () => {
     await expect(firstBadge).toContainText("PR");
   });
 
+  test("prev/next day navigation updates URL and content", async ({ page }) => {
+    await page.goto(`/?view=daily&date=${TEST_DATE}`);
+    await page.waitForSelector("[data-testid=day-detail]");
+
+    // Navigate to previous day
+    await page.getByRole("button", { name: "Previous day" }).click();
+    await expect(page).toHaveURL(/date=2098-12-31/);
+    await page.waitForSelector("[data-testid=day-detail]");
+
+    // Previous day has no data — should show "Not logged"
+    await expect(page.getByText("Not logged").first()).toBeVisible();
+
+    // Navigate forward twice to get back to test date + 1 (empty date)
+    await page.getByRole("button", { name: "Next day" }).click();
+    await expect(page).toHaveURL(new RegExp(`date=${TEST_DATE}`));
+    await page.waitForSelector("[data-testid=day-detail]");
+
+    // Back on test date — seeded data should be visible
+    await expect(page.locator("[data-testid=section-vitals]")).toContainText("175.5");
+  });
+
+  test("streak badges display on seeded date", async ({ page }) => {
+    await page.goto(`/?view=daily&date=${TEST_DATE}`);
+    await page.waitForSelector("[data-testid=day-detail]");
+
+    // The seeded date has fasting compliant + no alcohol + workout + logging data
+    // At minimum, the logging streak badge should appear (1 day of data)
+    // Check for any streak badge text patterns
+    const badges = page.locator(".rounded-full.bg-accent\\/10");
+    const count = await badges.count();
+    // At least the logging streak should appear for the seeded date
+    expect(count).toBeGreaterThan(0);
+  });
+
   test("empty date shows 'Not logged' for empty sections", async ({ page }) => {
     await page.goto(`/?view=daily&date=${TEST_DATE_EMPTY}`);
     await page.waitForSelector("[data-testid=day-detail]");

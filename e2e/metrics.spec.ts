@@ -49,6 +49,21 @@ test.describe("Metrics Dashboard", () => {
     expect(bestCount + longestCount).toBeGreaterThan(0);
   });
 
+  test("metric cards render sparkline charts", async ({ page }) => {
+    await page.goto("/?view=metrics");
+    await page.waitForSelector("[data-testid=metrics-dashboard]");
+
+    // Each metric card with data should render an SVG sparkline
+    const sparklines = page.locator("svg[role=img][aria-label='Sparkline chart']");
+    const count = await sparklines.count();
+    // At least weight and pullups should have data to chart
+    expect(count).toBeGreaterThan(0);
+
+    // Verify SVG contains path elements (the trend line)
+    const firstSparkline = sparklines.first();
+    await expect(firstSparkline.locator("path").first()).toBeVisible();
+  });
+
   test("range selector switches between periods", async ({ page }) => {
     await page.goto("/?view=metrics");
     await page.waitForSelector("[data-testid=metrics-dashboard]");
