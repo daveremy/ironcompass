@@ -4,9 +4,19 @@ import { getSupabase, throwIfError } from "../db.js";
 import { todayDate, daysAgo, parseDate, daysBeforeDate } from "../lib/date.js";
 import { parseNum } from "../lib/parse.js";
 import { dayUrl, calendarUrl } from "../lib/urls.js";
+import { scanStreaks, computeDailySumMax } from "../lib/streak-helpers.js";
 import type { Database } from "../types/database.js";
 
 type TableName = keyof Database["public"]["Tables"];
+
+const DATA_LIMIT = 10000;
+const LOGGING_STREAK_HISTORY_DAYS = 1825; // 5 years
+
+function warnIfTruncated(label: string, count: number) {
+  if (count >= DATA_LIMIT) {
+    console.warn(`[ironcompass] ${label}: fetched ${count} rows (hit ${DATA_LIMIT} limit) — results may be incomplete`);
+  }
+}
 
 // --- fetchDay ---
 
@@ -344,7 +354,9 @@ interface StreakConfig {
   queryFn?: (sb: ReturnType<typeof getSupabase>, rangeStart: string, rangeEnd: string) => Promise<any[]>;
 }
 
-async function fetchLoggingDates(sb: ReturnType<typeof getSupabase>, rangeStart: string, rangeEnd: string): Promise<any[]> {
+async function fetchLoggingDates(sb: ReturnType<typeof getSupabase>, _rangeStart: string, rangeEnd: string): Promise<any[]> {
+  const lowerBound = daysBeforeDate(rangeEnd, LOGGING_STREAK_HISTORY_DAYS);
+
   const tables: Array<{ table: TableName; filter?: (q: any) => any }> = [
     { table: "daily_entries" },
     { table: "sleep" },
@@ -360,7 +372,7 @@ async function fetchLoggingDates(sb: ReturnType<typeof getSupabase>, rangeStart:
 
   const results = await Promise.all(
     tables.map(({ table, filter }) => {
-      let q = sb.from(table).select("date").gte("date", rangeStart).lte("date", rangeEnd).order("date", { ascending: false }).limit(10000);
+      let q = sb.from(table).select("date").gte("date", lowerBound).lte("date", rangeEnd).order("date", { ascending: false }).limit(DATA_LIMIT);
       if (filter) q = filter(q);
       return q;
     })
@@ -405,47 +417,153 @@ export async function computeStreak(metric: string, asOfDate?: string) {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   }
 
-  const rangeStart = daysBack(365);
-
   let rows: any[];
   if (cfg.queryFn) {
-    rows = await cfg.queryFn(sb, rangeStart, refDate);
+    rows = await cfg.queryFn(sb, "1970-01-01", refDate);
   } else {
     let query = sb
       .from(cfg.table!)
       .select(cfg.select!)
-      .gte("date", rangeStart)
       .lte("date", refDate)
-      .order("date", { ascending: false });
+      .order("date", { ascending: false })
+      .limit(DATA_LIMIT);
     if (cfg.queryFilter) query = cfg.queryFilter(query);
     const { data, error } = await query;
     if (error) throw new Error(`Supabase query failed: ${error.message}`);
     rows = data ?? [];
   }
 
+  warnIfTruncated(`streak:${metric}`, rows.length);
+
+  // Build pass-dates set for the helper
   const rowsByDate = new Map<string, any>();
   for (const r of rows as any[]) {
     if (!rowsByDate.has(r.date)) rowsByDate.set(r.date, r);
   }
 
-  let count = 0;
+  const passDates = new Set<string>();
+  for (const [date, row] of rowsByDate) {
+    if (cfg.pass(row)) passDates.add(date);
+  }
+
+  const earliestDate = rows.length > 0 ? rows[rows.length - 1].date : refDate;
+
   let offset = 0;
-  // Only skip the reference date when it's today and not yet logged
   if (isRefToday) {
     const refRow = rowsByDate.get(refDate);
     if (!refRow || !cfg.logged(refRow)) offset = 1;
   }
 
-  for (let i = offset; ; i++) {
-    const d = daysBack(i);
-    if (d < rangeStart) break;
-    const row = rowsByDate.get(d);
-    if (row && cfg.pass(row)) count++;
-    else break;
-  }
+  const result = scanStreaks(passDates, refDate, offset, earliestDate);
+  const startDate = result.current > 0 ? daysBack(result.current + offset - 1) : null;
+  const longestStart = result.longest > 0 ? daysBack(result.longestEndIndex + result.longest - 1) : null;
+  const longestEndDate = result.longest > 0 ? daysBack(result.longestEndIndex) : null;
 
-  const startDate = count > 0 ? daysBack(count + offset - 1) : null;
-  return { metric, current_streak: count, start_date: startDate, as_of: refDate };
+  return {
+    metric, current_streak: result.current, start_date: startDate, as_of: refDate,
+    longest_streak: result.longest, longest_streak_start: longestStart, longest_streak_end: longestEndDate,
+  };
+}
+
+// --- Personal Records ---
+
+interface PRDefinition {
+  key: string;
+  label: string;
+  unit: string;
+  category: string;
+  table: TableName;
+  column: string;
+  type: "max" | "min";
+  filter?: (q: any) => any;
+}
+
+interface DailySumPRDefinition {
+  key: string;
+  label: string;
+  unit: string;
+  category: string;
+  table: TableName;
+  column: string;
+  type: "daily-sum-max";
+}
+
+type PRConfig = PRDefinition | DailySumPRDefinition;
+
+const completedFilter = (q: any) => q.or("completed.is.null,completed.eq.true");
+
+const PR_CONFIGS: PRConfig[] = [
+  { key: "pullups_max", label: "Best Pullup Day", unit: "reps", category: "fitness", table: "pullups", column: "total_count", type: "max" },
+  { key: "sleep_hours", label: "Best Sleep (Hours)", unit: "hrs", category: "sleep", table: "sleep", column: "hours", type: "max" },
+  { key: "sleep_oura", label: "Best Oura Score", unit: "pts", category: "sleep", table: "sleep", column: "oura_score", type: "max" },
+  { key: "weight_low", label: "Lowest Weight", unit: "lbs", category: "body", table: "daily_entries", column: "weight", type: "min" },
+  { key: "body_fat_low", label: "Lowest Body Fat", unit: "%", category: "body", table: "body_composition", column: "body_fat_pct", type: "min" },
+  { key: "workout_longest", label: "Longest Workout", unit: "min", category: "fitness", table: "workouts", column: "duration_min", type: "max", filter: completedFilter },
+  { key: "hike_distance", label: "Longest Hike (Distance)", unit: "mi", category: "fitness", table: "workouts", column: "distance_mi", type: "max", filter: (q: any) => completedFilter(q).eq("type", "hike") },
+  { key: "hike_elevation", label: "Most Elevation (Hike)", unit: "ft", category: "fitness", table: "workouts", column: "elevation_ft", type: "max", filter: (q: any) => completedFilter(q).eq("type", "hike") },
+  { key: "run_distance", label: "Longest Run", unit: "mi", category: "fitness", table: "workouts", column: "distance_mi", type: "max", filter: (q: any) => completedFilter(q).eq("type", "run") },
+  { key: "protein_daily", label: "Highest Daily Protein", unit: "g", category: "nutrition", table: "meals", column: "protein_g", type: "daily-sum-max" },
+  { key: "calories_daily", label: "Highest Daily Calories", unit: "kcal", category: "nutrition", table: "meals", column: "calories", type: "daily-sum-max" },
+];
+
+export interface PersonalRecord {
+  key: string;
+  label: string;
+  value: number;
+  unit: string;
+  date: string;
+  category: string;
+}
+
+export interface PersonalRecordsResult {
+  records: PersonalRecord[];
+  warnings: string[];
+}
+
+export async function fetchPersonalRecords(): Promise<PersonalRecordsResult> {
+  const sb = getSupabase();
+  const results = await Promise.allSettled(PR_CONFIGS.map(async (cfg) => {
+    if (cfg.type === "daily-sum-max") {
+      const { data, error } = await sb
+        .from(cfg.table)
+        .select(`date, ${cfg.column}`)
+        .not(cfg.column, "is", null)
+        .limit(DATA_LIMIT);
+      if (error) throw new Error(error.message);
+      if (!data || data.length === 0) return null;
+      warnIfTruncated(`pr:${cfg.key}`, data.length);
+
+      const best = computeDailySumMax(data as any[], cfg.column);
+      if (!best) return null;
+      return { key: cfg.key, label: cfg.label, value: best.value, unit: cfg.unit, date: best.date, category: cfg.category } as PersonalRecord;
+    }
+
+    // max or min
+    let query = sb
+      .from(cfg.table)
+      .select(`date, ${cfg.column}`)
+      .not(cfg.column, "is", null)
+      .order(cfg.column, { ascending: cfg.type === "min" })
+      .order("date", { ascending: true })
+      .limit(1);
+    if (cfg.filter) query = cfg.filter(query);
+    const { data, error } = await query;
+    if (error) throw new Error(error.message);
+    if (!data || data.length === 0) return null;
+
+    const row = data[0] as any;
+    return { key: cfg.key, label: cfg.label, value: Number(row[cfg.column]), unit: cfg.unit, date: row.date, category: cfg.category } as PersonalRecord;
+  }));
+
+  const records: PersonalRecord[] = [];
+  const warnings: string[] = [];
+
+  results.forEach((r, i) => {
+    if (r.status === "fulfilled" && r.value) records.push(r.value);
+    else if (r.status === "rejected") warnings.push(`Failed to fetch: ${PR_CONFIGS[i].key}`);
+  });
+
+  return { records, warnings };
 }
 
 // --- register commands ---
@@ -496,6 +614,17 @@ export function registerQueryCommands(program: Command): void {
     .action(async (metric, opts) => {
       try {
         success(await computeStreak(metric, opts.asOf));
+      } catch (e: any) {
+        fail(e.message ?? String(e));
+      }
+    });
+
+  program
+    .command("records")
+    .description("All-time personal records across all metrics")
+    .action(async () => {
+      try {
+        success(await fetchPersonalRecords());
       } catch (e: any) {
         fail(e.message ?? String(e));
       }

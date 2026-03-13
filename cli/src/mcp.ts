@@ -2,7 +2,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { fetchDay, fetchWeek, computeTrend, computeStreak, VALID_METRICS, VALID_STREAKS } from "./commands/query.js";
+import { fetchDay, fetchWeek, computeTrend, computeStreak, fetchPersonalRecords, VALID_METRICS, VALID_STREAKS } from "./commands/query.js";
 import { logDaily, logSleep, logFasting, logBp, logWorkout, logMeal, logPullups, logSupplements, logBodycomp, logMetric } from "./commands/log.js";
 import { getWorkoutTypes } from "./lib/workout-types.js";
 import { deleteRowById } from "./db.js";
@@ -61,6 +61,14 @@ server.registerTool("ironcompass_query_streak", {
 }, async ({ metric, as_of_date }) => {
   const result = await computeStreak(metric, as_of_date);
   return textResult({ ...result, dashboard_url: calendarUrl() });
+});
+
+server.registerTool("ironcompass_query_records", {
+  title: "Personal Records",
+  description: "Get all-time personal records across all metrics",
+  inputSchema: z.object({}),
+}, async () => {
+  return textResult(await fetchPersonalRecords());
 });
 
 // --- Log tools ---

@@ -4,11 +4,13 @@ import { useState, useEffect, useCallback } from "react";
 import {
   fetchTrend,
   fetchStreak,
+  fetchPersonalRecords,
   EMPTY_TREND_SUMMARY,
   type TrendResult,
   type SingleTrendResult,
   type MultiTrendResult,
   type StreakResult,
+  type PersonalRecord,
 } from "@/lib/queries";
 import { WEIGHT_GOAL, PROTEIN_TARGET } from "@/lib/config";
 import RangeSelector from "./range-selector";
@@ -16,6 +18,7 @@ import MetricCard from "./metric-card";
 import SleepCard from "./sleep-card";
 import BPCard from "./bp-card";
 import StreakCard from "./streak-card";
+import RecordsSection from "./records-section";
 
 interface SleepCardPoint { date: string; oura_score: number | null; apple_score: number | null; hours: number | null }
 interface BPCardPoint { date: string; systolic: number | null; diastolic: number | null }
@@ -50,25 +53,32 @@ export default function MetricsDashboard() {
   const [trends, setTrends] = useState<Trends | null>(null);
   const [trendsDays, setTrendsDays] = useState<number | null>(null);
   const [streaks, setStreaks] = useState<Streaks | null>(null);
-  const [failedCount, setFailedCount] = useState(0);
+  const [records, setRecords] = useState<PersonalRecord[]>([]);
+  const [trendFailed, setTrendFailed] = useState(0);
+  const [mountFailed, setMountFailed] = useState(0);
 
   const loading = trends === null || trendsDays !== days;
+  const failedCount = trendFailed + mountFailed;
 
-  // Fetch streaks once on mount
+  // Fetch streaks and records once on mount
   useEffect(() => {
     const controller = new AbortController();
 
     Promise.allSettled([
       fetchStreak("alcohol-free"),
       fetchStreak("fasting"),
+      fetchPersonalRecords(),
     ]).then((results) => {
       if (controller.signal.aborted) return;
-      const [af, f] = results;
+      const [af, f, pr] = results;
       setStreaks({
         alcoholFree: af.status === "fulfilled" ? af.value : null,
         fasting: f.status === "fulfilled" ? f.value : null,
       });
-      setFailedCount((prev) => prev + countFailed(results));
+      if (pr.status === "fulfilled") {
+        setRecords(pr.value.records);
+      }
+      setMountFailed(countFailed(results));
     });
 
     return () => controller.abort();
@@ -94,7 +104,7 @@ export default function MetricsDashboard() {
         protein: protein.status === "fulfilled" ? protein.value : null,
       });
       setTrendsDays(rangeDays);
-      setFailedCount(countFailed(results));
+      setTrendFailed(countFailed(results));
     });
 
     return controller;
@@ -165,6 +175,8 @@ export default function MetricsDashboard() {
           streak={streaks?.fasting?.current_streak ?? null}
           startDate={streaks?.fasting?.start_date ?? null}
           label="days compliant"
+          longestStreak={streaks?.fasting?.longest_streak}
+          longestStreakStart={streaks?.fasting?.longest_streak_start}
         />
         <StreakCard
           title="Alcohol-Free"
@@ -172,6 +184,8 @@ export default function MetricsDashboard() {
           streak={streaks?.alcoholFree?.current_streak ?? null}
           startDate={streaks?.alcoholFree?.start_date ?? null}
           label="days sober"
+          longestStreak={streaks?.alcoholFree?.longest_streak}
+          longestStreakStart={streaks?.alcoholFree?.longest_streak_start}
         />
 
         <MetricCard
@@ -198,6 +212,8 @@ export default function MetricsDashboard() {
           />
         </div>
       </div>
+
+      <RecordsSection records={records} />
 
       {failedCount > 0 && (
         <div className="mt-3 px-3 py-2 rounded border border-amber-500/30 bg-amber-500/5 text-amber-400 text-xs font-mono">

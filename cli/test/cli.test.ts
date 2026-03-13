@@ -89,6 +89,12 @@ describe("ironcompass CLI", () => {
     assert.equal(parsed.data.summary.count, 0);
   });
 
+  it("records --help shows description", () => {
+    const { stdout, exitCode } = run("records", "--help");
+    assert.equal(exitCode, 0);
+    assert.ok(stdout.includes("personal records"), stdout);
+  });
+
   it("streak with invalid metric fails with valid streak list", () => {
     const { stderr, exitCode } = run("streak", "bogus");
     assert.equal(exitCode, 1);

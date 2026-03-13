@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { parseNum, parseList, sparse } from "../src/lib/parse.ts";
 import { todayDate, daysAgo, parseDate, daysBeforeDate } from "../src/lib/date.ts";
 import { throwIfError } from "../src/db.ts";
+import { scanStreaks, computeMaxRecord, computeMinRecord, computeDailySumMax } from "../src/lib/streak-helpers.ts";
 
 describe("parseNum", () => {
   it("returns undefined for undefined input", () => {
@@ -169,6 +170,161 @@ describe("daysBeforeDate", () => {
 
   it("handles large offset", () => {
     assert.equal(daysBeforeDate("2026-03-12", 365), "2025-03-12");
+  });
+});
+
+// --- Streak helpers ---
+
+describe("scanStreaks", () => {
+  it("empty data returns longest = 0, current = 0", () => {
+    const result = scanStreaks(new Set(), "2026-03-12", 0, "2026-03-12");
+    assert.equal(result.current, 0);
+    assert.equal(result.longest, 0);
+  });
+
+  it("single continuous streak: longest = current", () => {
+    const dates = new Set(["2026-03-12", "2026-03-11", "2026-03-10"]);
+    const result = scanStreaks(dates, "2026-03-12", 0, "2026-03-10");
+    assert.equal(result.current, 3);
+    assert.equal(result.longest, 3);
+  });
+
+  it("broken streak with longer historical one", () => {
+    // Current: 2 days (Mar 12, 11). Gap on Mar 10. Historical: 5 days (Mar 9-5)
+    const dates = new Set([
+      "2026-03-12", "2026-03-11",
+      "2026-03-09", "2026-03-08", "2026-03-07", "2026-03-06", "2026-03-05",
+    ]);
+    const result = scanStreaks(dates, "2026-03-12", 0, "2026-03-05");
+    assert.equal(result.current, 2);
+    assert.equal(result.longest, 5);
+  });
+
+  it("multiple historical streaks: returns true maximum", () => {
+    // Current: 1 (Mar 12). Gap Mar 11. Streak of 3 (Mar 10-8). Gap Mar 7. Streak of 4 (Mar 6-3).
+    const dates = new Set([
+      "2026-03-12",
+      "2026-03-10", "2026-03-09", "2026-03-08",
+      "2026-03-06", "2026-03-05", "2026-03-04", "2026-03-03",
+    ]);
+    const result = scanStreaks(dates, "2026-03-12", 0, "2026-03-03");
+    assert.equal(result.current, 1);
+    assert.equal(result.longest, 4);
+  });
+
+  it("streak at data boundary is correctly counted", () => {
+    // All days from Mar 5 to Mar 12 = 8 day streak ending at boundary
+    const dates = new Set([
+      "2026-03-12", "2026-03-11", "2026-03-10", "2026-03-09",
+      "2026-03-08", "2026-03-07", "2026-03-06", "2026-03-05",
+    ]);
+    const result = scanStreaks(dates, "2026-03-12", 0, "2026-03-05");
+    assert.equal(result.current, 8);
+    assert.equal(result.longest, 8);
+  });
+
+  it("current streak is longest: longest = current", () => {
+    // Current: 4 (Mar 12-9). Historical: 2 (Mar 7-6).
+    const dates = new Set([
+      "2026-03-12", "2026-03-11", "2026-03-10", "2026-03-09",
+      "2026-03-07", "2026-03-06",
+    ]);
+    const result = scanStreaks(dates, "2026-03-12", 0, "2026-03-06");
+    assert.equal(result.current, 4);
+    assert.equal(result.longest, 4);
+  });
+
+  it("offset=1 skips refDate for current streak", () => {
+    // Mar 12 not logged (offset=1). Streak: Mar 11, 10.
+    const dates = new Set(["2026-03-11", "2026-03-10"]);
+    const result = scanStreaks(dates, "2026-03-12", 1, "2026-03-10");
+    assert.equal(result.current, 2);
+    assert.equal(result.longest, 2);
+  });
+});
+
+// --- PR record helpers ---
+
+describe("computeMaxRecord", () => {
+  it("returns max value with earliest date on tie", () => {
+    const rows = [
+      { date: "2026-03-10", score: 90 },
+      { date: "2026-03-08", score: 95 },
+      { date: "2026-03-12", score: 95 },
+    ];
+    const result = computeMaxRecord(rows, "score");
+    assert.deepEqual(result, { value: 95, date: "2026-03-08" });
+  });
+
+  it("returns null for empty array", () => {
+    assert.equal(computeMaxRecord([], "score"), null);
+  });
+
+  it("skips null values", () => {
+    const rows = [
+      { date: "2026-03-10", score: null },
+      { date: "2026-03-11", score: 80 },
+    ];
+    const result = computeMaxRecord(rows, "score");
+    assert.deepEqual(result, { value: 80, date: "2026-03-11" });
+  });
+
+  it("returns null when all values are null", () => {
+    const rows = [
+      { date: "2026-03-10", score: null },
+      { date: "2026-03-11", score: null },
+    ];
+    assert.equal(computeMaxRecord(rows, "score"), null);
+  });
+});
+
+describe("computeMinRecord", () => {
+  it("returns min value with earliest date on tie", () => {
+    const rows = [
+      { date: "2026-03-10", weight: 175 },
+      { date: "2026-03-08", weight: 170 },
+      { date: "2026-03-12", weight: 170 },
+    ];
+    const result = computeMinRecord(rows, "weight");
+    assert.deepEqual(result, { value: 170, date: "2026-03-08" });
+  });
+
+  it("returns null for empty array", () => {
+    assert.equal(computeMinRecord([], "weight"), null);
+  });
+});
+
+describe("computeDailySumMax", () => {
+  it("sums per date and returns max", () => {
+    const rows = [
+      { date: "2026-03-10", protein_g: 30 },
+      { date: "2026-03-10", protein_g: 40 },
+      { date: "2026-03-11", protein_g: 60 },
+    ];
+    const result = computeDailySumMax(rows, "protein_g");
+    assert.deepEqual(result, { value: 70, date: "2026-03-10" });
+  });
+
+  it("earliest date wins on tie", () => {
+    const rows = [
+      { date: "2026-03-10", val: 50 },
+      { date: "2026-03-12", val: 50 },
+    ];
+    const result = computeDailySumMax(rows, "val");
+    assert.deepEqual(result, { value: 50, date: "2026-03-10" });
+  });
+
+  it("returns null for empty array", () => {
+    assert.equal(computeDailySumMax([], "val"), null);
+  });
+
+  it("skips null values", () => {
+    const rows = [
+      { date: "2026-03-10", val: null },
+      { date: "2026-03-11", val: 25 },
+    ];
+    const result = computeDailySumMax(rows, "val");
+    assert.deepEqual(result, { value: 25, date: "2026-03-11" });
   });
 });
 
