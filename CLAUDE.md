@@ -104,6 +104,12 @@ ironcompass trend coffee --days 7    # custom metric trend
 ironcompass streak alcohol-free      # current alcohol-free streak
 ironcompass streak fasting           # fasting compliance streak
 ironcompass status                   # overall dashboard summary (for daily briefing)
+
+# Weekly Plan
+ironcompass plan show                          # show active plan template
+ironcompass plan set --schedule '<json>'        # set weekly plan from JSON
+ironcompass plan instantiate [--week 2026-03-09] # create planned workout rows for a week
+ironcompass plan status [--week 2026-03-09]     # plan-vs-actual for the week
 ```
 
 ## MCP Tools
@@ -123,10 +129,49 @@ The MCP server exposes these as tools Claude can call directly:
 - `ironcompass_delete_metric` — delete a custom metric entry by ID
 - `ironcompass_delete_meal` — delete a meal by ID
 - `ironcompass_delete_workout` — delete a workout by ID
-- `ironcompass_query_today` — get today's summary
-- `ironcompass_query_week` — get weekly summary
+- `ironcompass_query_today` — get today's summary (includes today's plan + week progress if active)
+- `ironcompass_query_week` — get weekly summary (includes plan status if active)
 - `ironcompass_query_trend` — get trend data for a metric
 - `ironcompass_query_streak` — get current streak for a metric
+- `ironcompass_set_plan` — set/replace active weekly training plan template
+- `ironcompass_get_plan` — get the active weekly plan template
+- `ironcompass_instantiate_plan` — create planned workout rows for a week (idempotent)
+- `ironcompass_query_plan` — get plan-vs-actual status with target progress
+
+## Weekly Planning
+
+### How It Works
+1. **Set a plan** — `ironcompass_set_plan` with a schedule (day-of-week → workouts) and optional targets (total sessions, duration, per-type)
+2. **Instantiate weekly** — `ironcompass_instantiate_plan` creates planned workout rows for a specific week. Idempotent (safe to re-run). Must be called each week.
+3. **Track progress** — `ironcompass_query_plan` shows plan-vs-actual with matching, target progress, and summary
+4. **Log actuals** — Normal `ironcompass_log_workout` calls. Matched to plan by date + type (one-to-one).
+
+### Workout Status
+- **Scheduled**: `planned=true, completed=false`, today or future → hollow dot on calendar
+- **Skipped**: `planned=true, completed=false`, past date → gray dot on calendar
+- **Completed**: either `planned=true, completed=true` (in-place) or matched to a separate actual workout
+
+### Plan Template Format
+```json
+{
+  "monday": [{ "type": "pickleball", "duration_min": 90 }],
+  "tuesday": [{ "type": "strength", "duration_min": 45, "notes": "Day A" }],
+  "wednesday": [],
+  "thursday": [{ "type": "pickleball", "duration_min": 90 }],
+  "friday": [{ "type": "strength", "duration_min": 45, "notes": "Day B" }],
+  "saturday": [{ "type": "hike" }],
+  "sunday": []
+}
+```
+
+### Targets (optional)
+```json
+{
+  "total_sessions": 6,
+  "total_duration_min": 350,
+  "by_type": { "strength": { "sessions": 2 }, "pickleball": { "sessions": 2 } }
+}
+```
 
 ## Web Dashboard Views
 
@@ -141,6 +186,8 @@ The MCP server exposes these as tools Claude can call directly:
 ### Weekly View
 - Dedicated `?view=weekly&date=<monday>` view with prev/next week navigation
 - Sections: Overview (days logged, weight delta, alcohol), Sleep (avg hours/oura/apple), Workouts (count + type badges + list), Nutrition (avg daily protein/calories), Fasting (compliant days), Pullups (total + active days)
+- Plan Progress card shows session/duration/per-type targets when active plan exists
+- Planned workouts shown with hollow dots, skipped with gray strikethrough
 - URL auto-syncs to Monday of selected week for deep-linking
 
 ### Metrics Dashboard

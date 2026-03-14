@@ -53,9 +53,13 @@ The visual layer. Calendar view + metrics. Deploy to Vercel.
 ### Design decision: multi-view navigation
 All dashboard views (monthly calendar, weekly, daily) share a single page with `?view=` query param routing (`?view=daily&date=2026-03-06`). This makes every view deep-linkable so the AI assistant can open specific views by constructing a URL. Shell nav tabs and CalendarDay onClick will drive these params starting in #13.
 
-## Phase 4: Integrations
+## Phase 4: Data Display & Enrichment
 
-Source integrations (Apple Health, Oura, Hevy, Strava) live in LifeOS, not IronCompass. LifeOS reconciles data from multiple sources before sending it here via MCP tools. Issues #18-22 closed — moved to LifeOS.
+Source integrations (Apple Health, Oura, Hevy) live in LifeOS, which reconciles data and sends it via MCP tools. IronCompass focuses on displaying enriched data well.
+
+| Issue | Task | Status |
+|---|---|---|
+| #76 | Strava integration: activity linking, route maps, and embed support | todo |
 
 ---
 
@@ -90,7 +94,7 @@ Source integrations (Apple Health, Oura, Hevy, Strava) live in LifeOS, not IronC
 | #52 | Use `display_name` from workout_types table in UI | **done** |
 | #55 | Add prev/next day navigation to daily detail view | **done** |
 | #56 | Package IronCompass as a Claude Code plugin with companion skill | **done** |
-| #58 | Weekly planning & visualization (TrainingPeaks-style) | todo |
+| #58 | Weekly planning & visualization (TrainingPeaks-style) | **done** |
 | #59 | Add `walk` workout type | **done** |
 | #60 | Body composition section should include weight | **done** |
 | #61 | Fasting card should show fast duration prominently | **done** |
@@ -99,6 +103,9 @@ Source integrations (Apple Health, Oura, Hevy, Strava) live in LifeOS, not IronC
 | #69 | Show streak badges on historical daily detail pages | **done** |
 | #62 | Sleep card: composite score from multiple sources | todo |
 | #68 | Add sickness/illness tracking | todo |
+| #77 | Supplements: add replace mode and delete capability | todo |
+| #78 | Replace hardcoded sleep booleans with flexible sleep tags | todo |
+| #79 | Expand Vitals section with more daily metrics | todo |
 
 ## Testing
 
