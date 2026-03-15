@@ -9,6 +9,7 @@ import type {
   DaySummary,
   FastingRow,
   MealRow,
+  MetricRow,
   PullupsRow,
   SleepRow,
   SupplementsRow,
@@ -31,9 +32,10 @@ export interface DayData {
   meals: MealRow[];
   bloodPressure: BloodPressureRow[];
   pullups: PullupsRow | null;
-  supplements: SupplementsRow | null;
+  supplements: MetricRow[];
   bodyComp: BodyCompositionRow | null;
-  customMetrics: CustomMetricRow[];
+  customMetrics: MetricRow[];
+  sleepTags: MetricRow[];
 }
 
 export async function fetchDayData(date: string): Promise<DayData> {
@@ -45,9 +47,8 @@ export async function fetchDayData(date: string): Promise<DayData> {
     mealsRes,
     bpRes,
     pullupsRes,
-    supplementsRes,
     bodyCompRes,
-    customMetricsRes,
+    metricsRes,
   ] = await Promise.all([
     supabase.from("daily_entries").select("*").eq("date", date).maybeSingle(),
     supabase.from("sleep").select("*").eq("date", date).maybeSingle(),
@@ -56,14 +57,13 @@ export async function fetchDayData(date: string): Promise<DayData> {
     supabase.from("meals").select("*").eq("date", date).order("time"),
     supabase.from("blood_pressure").select("*").eq("date", date).order("time"),
     supabase.from("pullups").select("*").eq("date", date).maybeSingle(),
-    supabase.from("supplements").select("*").eq("date", date).maybeSingle(),
     supabase.from("body_composition").select("*").eq("date", date).maybeSingle(),
-    supabase.from("custom_metrics").select("*").eq("date", date).order("metric_name").order("created_at"),
+    supabase.from("metrics").select("*").eq("date", date).order("metric_name").order("created_at"),
   ]);
 
   const errors = [
     dailyRes, sleepRes, fastingRes, workoutsRes, mealsRes,
-    bpRes, pullupsRes, supplementsRes, bodyCompRes, customMetricsRes,
+    bpRes, pullupsRes, bodyCompRes, metricsRes,
   ]
     .filter((r) => r.error)
     .map((r) => r.error!.message);
@@ -71,6 +71,8 @@ export async function fetchDayData(date: string): Promise<DayData> {
   if (errors.length > 0) {
     throw new Error(`Failed to fetch day data: ${errors.join("; ")}`);
   }
+
+  const allMetrics = (metricsRes.data ?? []) as MetricRow[];
 
   return {
     daily: dailyRes.data,
@@ -80,9 +82,10 @@ export async function fetchDayData(date: string): Promise<DayData> {
     meals: mealsRes.data ?? [],
     bloodPressure: bpRes.data ?? [],
     pullups: pullupsRes.data,
-    supplements: supplementsRes.data,
+    supplements: allMetrics.filter((r) => r.category === "supplement"),
     bodyComp: bodyCompRes.data,
-    customMetrics: customMetricsRes.data ?? [],
+    customMetrics: allMetrics.filter((r) => r.category === "custom"),
+    sleepTags: allMetrics.filter((r) => r.category === "sleep_tag"),
   };
 }
 
@@ -90,7 +93,7 @@ export async function fetchDayData(date: string): Promise<DayData> {
 // Dynamic column processing requires loose typing — mirrors CLI pattern
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-type TableName = "daily_entries" | "sleep" | "blood_pressure" | "pullups" | "meals" | "body_composition" | "fasting" | "workouts" | "custom_metrics" | "supplements";
+type TableName = "daily_entries" | "sleep" | "blood_pressure" | "pullups" | "meals" | "body_composition" | "fasting" | "workouts" | "metrics";
 
 const DATA_LIMIT = 10000;
 const LOGGING_STREAK_HISTORY_DAYS = 1825; // 5 years
@@ -273,9 +276,8 @@ async function fetchLoggingDates(_rangeStart: string, rangeEnd: string): Promise
     { table: "workouts" },
     { table: "meals" },
     { table: "pullups" },
-    { table: "supplements" },
     { table: "body_composition" },
-    { table: "custom_metrics" },
+    { table: "metrics", filter: (q: any) => q.neq("category", "sleep_tag") },
   ];
 
   const results = await Promise.all(

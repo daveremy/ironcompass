@@ -2,7 +2,7 @@ import { Command } from "commander";
 import { fail, success } from "../output.js";
 import { getSupabase, upsertRow, insertRow } from "../db.js";
 import { ensureDailyEntry } from "../lib/ensure-daily-entry.js";
-import { parseNum, parseList, parseJsonObject, parseTimestamp, mergeSupplements, sparse } from "../lib/parse.js";
+import { parseNum, parseList, parseJsonObject, parseTimestamp, sparse } from "../lib/parse.js";
 import { todayDate } from "../lib/date.js";
 import { validateWorkoutType } from "../lib/workout-types.js";
 
@@ -51,12 +51,74 @@ export async function logPullups(date: string, total_count: number, fields: { se
   return upsertRow("pullups", { date, total_count, ...sparse(fields) });
 }
 
-export async function logSupplements(date: string, supplements: string[]) {
-  await ensureDailyEntry(date);
-  const { data: existing, error } = await getSupabase().from("supplements").select("supplements").eq("date", date).maybeSingle();
+async function ensureMetricDefinitions(names: string[], defaults: { type: string; unit?: string; category: string }) {
+  const defs = names.map(name => ({
+    name,
+    display_name: name.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase()),
+    type: defaults.type,
+    unit: defaults.unit ?? null,
+    category: defaults.category,
+  }));
+  const { error } = await getSupabase()
+    .from("metric_definitions")
+    .upsert(defs as any, { onConflict: "name", ignoreDuplicates: true });
   if (error) throw new Error(`Database error: ${error.message}`);
-  const merged = mergeSupplements(existing?.supplements ?? [], supplements);
-  return upsertRow("supplements", { date, supplements: merged });
+}
+
+async function upsertTagRows(date: string, rawNames: string[], category: string) {
+  const names = [...new Set(rawNames)]; // deduplicate
+  const sb = getSupabase();
+  await ensureMetricDefinitions(names, { type: "tag", category });
+
+  const { data: existing, error: fetchError } = await sb
+    .from("metrics").select("metric_name").eq("date", date).eq("category", category);
+  if (fetchError) throw new Error(`Database error: ${fetchError.message}`);
+  const existingNames = new Set((existing ?? []).map((r: any) => r.metric_name));
+  const newNames = names.filter(n => !existingNames.has(n));
+
+  if (newNames.length > 0) {
+    const rows = newNames.map(name => ({ date, metric_name: name, category }));
+    const { error } = await sb.from("metrics").insert(rows as any).select();
+    if (error) throw new Error(`Database error: ${error.message}`);
+  }
+
+  // Return all rows for this date+category
+  const { data, error } = await sb.from("metrics").select().eq("date", date).eq("category", category);
+  if (error) throw new Error(`Database error: ${error.message}`);
+  return data;
+}
+
+export async function logSupplements(date: string, supplements: string[], mode: "merge" | "replace" = "merge") {
+  await ensureDailyEntry(date);
+  const names = [...new Set(supplements.map(s => s.toLowerCase()))];
+
+  let rows;
+  if (mode === "replace") {
+    const sb = getSupabase();
+    await ensureMetricDefinitions(names, { type: "tag", category: "supplement" });
+    const { error: delError } = await sb.from("metrics").delete().eq("date", date).eq("category", "supplement");
+    if (delError) throw new Error(`Database error: ${delError.message}`);
+    const inserts = names.map(name => ({ date, metric_name: name, category: "supplement" }));
+    const { data, error } = await sb.from("metrics").insert(inserts as any).select();
+    if (error) throw new Error(`Database error: ${error.message}`);
+    rows = data;
+  } else {
+    rows = await upsertTagRows(date, names, "supplement");
+  }
+
+  // Backward-compatible shape: { date, supplements: string[] }
+  return { date, supplements: (rows ?? []).map((r: any) => r.metric_name) };
+}
+
+export async function deleteSupplementByName(date: string, name: string) {
+  const sb = getSupabase();
+  const { data, error } = await sb
+    .from("metrics").delete()
+    .eq("date", date).eq("metric_name", name.toLowerCase()).eq("category", "supplement")
+    .select().maybeSingle();
+  if (error) throw new Error(`Database error: ${error.message}`);
+  if (!data) throw new Error(`No supplement "${name}" found on ${date}`);
+  return data;
 }
 
 export async function logBodycomp(date: string, fields: { body_fat_pct?: number; muscle_mass_lbs?: number; bone_mass_lbs?: number; body_water_pct?: number; visceral_fat?: number; bmr?: number; notes?: string } = {}) {
@@ -66,7 +128,14 @@ export async function logBodycomp(date: string, fields: { body_fat_pct?: number;
 
 export async function logMetric(date: string, metric_name: string, value: number, fields: { unit?: string; notes?: string } = {}) {
   await ensureDailyEntry(date);
-  return insertRow("custom_metrics", { date, metric_name: metric_name.toLowerCase(), value, ...sparse(fields) });
+  const name = metric_name.toLowerCase();
+  await ensureMetricDefinitions([name], { type: "numeric", unit: fields.unit, category: "custom" });
+  return insertRow("metrics", { date, metric_name: name, numeric_value: value, unit: fields.unit ?? null, category: "custom", ...sparse({ notes: fields.notes }) });
+}
+
+export async function logSleepTags(date: string, tags: string[]) {
+  await ensureDailyEntry(date);
+  return upsertTagRows(date, tags.map(t => t.toLowerCase()), "sleep_tag");
 }
 
 export function registerLogCommands(program: Command): void {
@@ -293,6 +362,21 @@ export function registerLogCommands(program: Command): void {
           bmr: parseNum("bmr", opts.bmr),
           notes: opts.notes as string | undefined,
         });
+        success(result);
+      } catch (e: any) { fail(e.message ?? String(e)); }
+    });
+
+  // --- sleep-tags ---
+  log
+    .command("sleep-tags")
+    .description("Log sleep tags (flexible tags like nap, meditation, melatonin)")
+    .option("--date <date>", "Date (YYYY-MM-DD)", today)
+    .requiredOption("--tags <list>", "Sleep tags (comma-separated)")
+    .action(async (opts) => {
+      try {
+        const tags = parseList(opts.tags as string);
+        if (tags.length === 0) fail("--tags requires at least one tag");
+        const result = await logSleepTags(opts.date as string, tags);
         success(result);
       } catch (e: any) { fail(e.message ?? String(e)); }
     });

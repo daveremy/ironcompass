@@ -36,10 +36,10 @@ describe("ironcompass CLI", () => {
     assert.ok(stdout.includes("0.1.0"));
   });
 
-  it("log --help lists all 9 subcommands", () => {
+  it("log --help lists all 11 subcommands", () => {
     const { stdout, exitCode } = run("log", "--help");
     assert.equal(exitCode, 0);
-    for (const cmd of ["daily", "sleep", "fasting", "bp", "workout", "meal", "pullups", "supplements", "bodycomp"]) {
+    for (const cmd of ["daily", "sleep", "fasting", "bp", "workout", "meal", "pullups", "supplements", "bodycomp", "sleep-tags", "metric"]) {
       assert.ok(stdout.includes(cmd), `missing subcommand: ${cmd}`);
     }
   });
@@ -208,6 +208,12 @@ describe("ironcompass CLI", () => {
     const { stdout, exitCode } = run("plan", "status", "--help");
     assert.equal(exitCode, 0);
     assert.ok(stdout.includes("--week"), "missing --week option");
+  });
+
+  it("log sleep-tags --help shows --tags option", () => {
+    const { stdout, exitCode } = run("log", "sleep-tags", "--help");
+    assert.equal(exitCode, 0);
+    assert.ok(stdout.includes("--tags"), "missing --tags option");
   });
 
   // empty supplements rejected

@@ -103,8 +103,8 @@ Source integrations (Apple Health, Oura, Hevy) live in LifeOS, which reconciles 
 | #69 | Show streak badges on historical daily detail pages | **done** |
 | #62 | Sleep card: composite score from multiple sources | todo |
 | #68 | Add sickness/illness tracking | todo |
-| #77 | Supplements: add replace mode and delete capability | todo |
-| #78 | Replace hardcoded sleep booleans with flexible sleep tags | todo |
+| #77 | Supplements: add replace mode and delete capability | **done** |
+| #78 | Replace hardcoded sleep booleans with flexible sleep tags | **done** |
 | #79 | Expand Vitals section with more daily metrics | todo |
 
 ## Testing

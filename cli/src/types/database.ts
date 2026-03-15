@@ -55,6 +55,87 @@ export type Database = {
           },
         ]
       }
+      metric_definitions: {
+        Row: {
+          name: string
+          display_name: string
+          type: string
+          unit: string | null
+          category: string
+          created_at: string | null
+        }
+        Insert: {
+          name: string
+          display_name: string
+          type: string
+          unit?: string | null
+          category: string
+          created_at?: string | null
+        }
+        Update: {
+          name?: string
+          display_name?: string
+          type?: string
+          unit?: string | null
+          category?: string
+          created_at?: string | null
+        }
+        Relationships: []
+      }
+      metrics: {
+        Row: {
+          id: string
+          date: string
+          metric_name: string
+          numeric_value: number | null
+          text_value: string | null
+          unit: string | null
+          category: string
+          notes: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          date: string
+          metric_name: string
+          numeric_value?: number | null
+          text_value?: string | null
+          unit?: string | null
+          category: string
+          notes?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          date?: string
+          metric_name?: string
+          numeric_value?: number | null
+          text_value?: string | null
+          unit?: string | null
+          category?: string
+          notes?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "metrics_date_fkey"
+            columns: ["date"]
+            isOneToOne: false
+            referencedRelation: "daily_entries"
+            referencedColumns: ["date"]
+          },
+          {
+            foreignKeyName: "metrics_metric_name_fkey"
+            columns: ["metric_name"]
+            isOneToOne: false
+            referencedRelation: "metric_definitions"
+            referencedColumns: ["name"]
+          },
+        ]
+      }
       blood_pressure: {
         Row: {
           created_at: string | null

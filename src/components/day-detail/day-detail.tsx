@@ -169,7 +169,7 @@ export default function DayDetail({ date, backMonth }: { date: string; backMonth
       )}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <SectionVitals data={data!.daily} />
-        <SectionSleep data={data!.sleep} />
+        <SectionSleep data={data!.sleep} sleepTags={data!.sleepTags} />
         <SectionFasting data={data!.fasting} />
         <SectionBP data={data!.bloodPressure} />
         <div className="col-span-full">

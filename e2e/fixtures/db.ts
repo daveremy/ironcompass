@@ -12,6 +12,8 @@ import {
   PULLUPS,
   SUPPLEMENTS,
   BODY_COMPOSITION,
+  METRIC_DEFINITIONS,
+  METRIC_ROWS,
 } from "./test-data";
 
 // Load .env.local before reading env vars
@@ -39,6 +41,7 @@ const TABLES = [
   "supplements",
   "body_composition",
   "custom_metrics",
+  "metrics",
 ] as const;
 
 export async function cleanupAll() {
@@ -46,6 +49,9 @@ export async function cleanupAll() {
   await Promise.all(
     TABLES.map((table) => db.from(table).delete().eq("date", TEST_DATE))
   );
+  // Clean up metric_definitions seeded by tests (no date column — delete by name)
+  const defNames = METRIC_DEFINITIONS.map((d) => d.name);
+  await db.from("metric_definitions").delete().in("name", defNames);
 }
 
 export async function seedAll() {
@@ -54,6 +60,10 @@ export async function seedAll() {
   // daily_entries must be inserted first (other tables have FK to it)
   const dailyResult = await db.from("daily_entries").upsert(DAILY_ENTRY, { onConflict: "date" });
   if (dailyResult.error) throw new Error(`Seed daily_entries failed: ${dailyResult.error.message}`);
+
+  // Seed metric_definitions first (metrics rows reference them)
+  const defResult = await db.from("metric_definitions").upsert(METRIC_DEFINITIONS, { onConflict: "name" });
+  if (defResult.error) throw new Error(`Seed metric_definitions failed: ${defResult.error.message}`);
 
   const results = await Promise.all([
     db.from("sleep").upsert(SLEEP, { onConflict: "date" }),
@@ -64,6 +74,7 @@ export async function seedAll() {
     db.from("pullups").upsert(PULLUPS, { onConflict: "date" }),
     db.from("supplements").upsert(SUPPLEMENTS, { onConflict: "date" }),
     db.from("body_composition").upsert(BODY_COMPOSITION, { onConflict: "date" }),
+    db.from("metrics").insert(METRIC_ROWS),
   ]);
 
   const errors = results.filter((r) => r.error);
