@@ -31,12 +31,16 @@ export async function fetchDay(date: string) {
     sb.from("workouts").select().eq("date", date).order("start_time", { ascending: true, nullsFirst: false }).order("created_at"),
     sb.from("meals").select().eq("date", date),
     sb.from("pullups").select().eq("date", date).maybeSingle(),
-    sb.from("supplements").select().eq("date", date).maybeSingle(),
     sb.from("body_composition").select().eq("date", date).maybeSingle(),
-    sb.from("custom_metrics").select().eq("date", date),
+    sb.from("metrics").select().eq("date", date).order("metric_name").order("created_at"),
   ]);
   results.forEach(throwIfError);
-  const [daily, sleep, fasting, bp, workouts, meals, pullups, supplements, bodycomp, customMetrics] = results;
+  const [daily, sleep, fasting, bp, workouts, meals, pullups, bodycomp, metricsResult] = results;
+
+  const allMetrics = (metricsResult.data ?? []) as any[];
+  const supplementRows = allMetrics.filter((r: any) => r.category === "supplement");
+  const customMetricRows = allMetrics.filter((r: any) => r.category === "custom");
+  const sleepTagRows = allMetrics.filter((r: any) => r.category === "sleep_tag");
 
   // Include plan context if active plan exists
   let today_plan = undefined;
@@ -76,6 +80,18 @@ export async function fetchDay(date: string) {
     // Plan features are optional — don't fail the whole query
   }
 
+  // Backward-compatible output: supplements as { date, supplements: string[] }
+  const supplementsCompat = supplementRows.length > 0
+    ? { date, supplements: supplementRows.map((r: any) => r.metric_name) }
+    : null;
+
+  // Backward-compatible output: custom_metrics as [{ date, metric_name, value, unit, notes }]
+  const customMetricsCompat = customMetricRows.map((r: any) => ({
+    date: r.date, metric_name: r.metric_name, value: r.numeric_value, unit: r.unit, notes: r.notes, id: r.id,
+  }));
+
+  const sleepTags = sleepTagRows.map((r: any) => r.metric_name);
+
   return {
     date,
     dashboard_url: dayUrl(date),
@@ -86,9 +102,10 @@ export async function fetchDay(date: string) {
     workouts: workouts.data ?? [],
     meals: meals.data ?? [],
     pullups: pullups.data ?? null,
-    supplements: supplements.data ?? null,
+    supplements: supplementsCompat,
     body_composition: bodycomp.data ?? null,
-    custom_metrics: customMetrics.data ?? [],
+    custom_metrics: customMetricsCompat,
+    ...(sleepTags.length > 0 ? { sleep_tags: sleepTags } : {}),
     ...(today_plan ? { today_plan } : {}),
     ...(week_progress ? { week_progress } : {}),
   };
@@ -113,7 +130,7 @@ export async function fetchWeek() {
     sb.from("meals").select().gte("date", start).lte("date", end).order("date"),
     sb.from("fasting").select().gte("date", start).lte("date", end).order("date"),
     sb.from("pullups").select().gte("date", start).lte("date", end).order("date"),
-    sb.from("custom_metrics").select().gte("date", start).lte("date", end).order("date"),
+    sb.from("metrics").select().eq("category", "custom").gte("date", start).lte("date", end).order("date"),
   ]);
   results.forEach(throwIfError);
   const [daily, sleep, workouts, meals, fasting, pullups, customMetrics] = results;
@@ -170,7 +187,7 @@ export async function fetchWeek() {
   const customByName: Record<string, { total: number; dates: Set<string>; unit: string | null }> = {};
   for (const r of customMetricRows as any[]) {
     const entry = customByName[r.metric_name] ??= { total: 0, dates: new Set(), unit: null };
-    entry.total += Number(r.value);
+    entry.total += Number(r.numeric_value);
     entry.dates.add(r.date);
     entry.unit ??= r.unit;
   }
@@ -300,8 +317,8 @@ async function computeCustomMetricTrend(metric: string, days: number) {
   const sb = getSupabase();
 
   const { data: rows, error } = await sb
-    .from("custom_metrics")
-    .select("date, value, unit")
+    .from("metrics")
+    .select("date, numeric_value, unit")
     .eq("metric_name", metric.toLowerCase())
     .gte("date", start)
     .lte("date", end)
@@ -309,7 +326,7 @@ async function computeCustomMetricTrend(metric: string, days: number) {
 
   if (error) throw new Error(`Query failed: ${error.message}`);
   const data = rows ?? [];
-  const points = dailySumPoints(data);
+  const points = dailySumPoints(data, "numeric_value");
   const unit = (data as any[]).find((r) => r.unit != null)?.unit ?? null;
 
   return {
@@ -418,9 +435,8 @@ async function fetchLoggingDates(sb: ReturnType<typeof getSupabase>, _rangeStart
     { table: "workouts" },
     { table: "meals" },
     { table: "pullups" },
-    { table: "supplements" },
     { table: "body_composition" },
-    { table: "custom_metrics" },
+    { table: "metrics", filter: (q: any) => q.neq("category", "sleep_tag") },
   ];
 
   const results = await Promise.all(

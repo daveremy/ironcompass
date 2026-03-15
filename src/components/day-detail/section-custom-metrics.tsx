@@ -1,15 +1,15 @@
-import type { CustomMetricRow } from "@/lib/types";
+import type { MetricRow } from "@/lib/types";
 import SectionCard from "./section-card";
 
 function capitalize(s: string) {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-export default function SectionCustomMetrics({ data }: { data: CustomMetricRow[] }) {
+export default function SectionCustomMetrics({ data }: { data: MetricRow[] }) {
   if (data.length === 0) return null;
 
   // Group by metric_name
-  const grouped = new Map<string, CustomMetricRow[]>();
+  const grouped = new Map<string, MetricRow[]>();
   for (const row of data) {
     if (!grouped.has(row.metric_name)) grouped.set(row.metric_name, []);
     grouped.get(row.metric_name)!.push(row);
@@ -19,7 +19,7 @@ export default function SectionCustomMetrics({ data }: { data: CustomMetricRow[]
     <SectionCard title="Custom Metrics" accent="#8b5cf6">
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         {[...grouped.entries()].map(([name, rows]) => {
-          const total = rows.reduce((s, r) => s + r.value, 0);
+          const total = rows.reduce((s, r) => s + (r.numeric_value ?? 0), 0);
           const unit = rows[0].unit;
           const notes = rows.map((r) => r.notes).filter(Boolean);
 
@@ -32,7 +32,7 @@ export default function SectionCustomMetrics({ data }: { data: CustomMetricRow[]
                 {rows.length > 1 ? (
                   <>
                     <span className="text-sm text-muted font-normal">
-                      {rows.map((r) => r.value).join(" + ")} ={" "}
+                      {rows.map((r) => r.numeric_value).join(" + ")} ={" "}
                     </span>
                     {total}
                   </>

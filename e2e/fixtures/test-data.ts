@@ -84,6 +84,20 @@ export const SUPPLEMENTS = {
   supplements: ["vitamin-d", "magnesium", "omega-3", "creatine"],
 };
 
+export const METRIC_DEFINITIONS = [
+  { name: "vitamin-d", display_name: "Vitamin D", type: "tag", category: "supplement" },
+  { name: "magnesium", display_name: "Magnesium", type: "tag", category: "supplement" },
+  { name: "omega-3", display_name: "Omega 3", type: "tag", category: "supplement" },
+  { name: "creatine", display_name: "Creatine", type: "tag", category: "supplement" },
+];
+
+export const METRIC_ROWS = [
+  { date: TEST_DATE, metric_name: "vitamin-d", category: "supplement" },
+  { date: TEST_DATE, metric_name: "magnesium", category: "supplement" },
+  { date: TEST_DATE, metric_name: "omega-3", category: "supplement" },
+  { date: TEST_DATE, metric_name: "creatine", category: "supplement" },
+];
+
 export const BODY_COMPOSITION = {
   date: TEST_DATE,
   body_fat_pct: 18.5,

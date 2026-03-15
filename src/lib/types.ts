@@ -21,6 +21,30 @@ export type Database = {
           value: number
         }
       }
+      metric_definitions: {
+        Row: {
+          name: string
+          display_name: string
+          type: string
+          unit: string | null
+          category: string
+          created_at: string | null
+        }
+      }
+      metrics: {
+        Row: {
+          id: string
+          date: string
+          metric_name: string
+          numeric_value: number | null
+          text_value: string | null
+          unit: string | null
+          category: string
+          notes: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+      }
       blood_pressure: {
         Row: {
           created_at: string | null
@@ -231,6 +255,8 @@ export interface WeekData {
 }
 
 export type CustomMetricRow = Database["public"]["Tables"]["custom_metrics"]["Row"];
+export type MetricDefinitionRow = Database["public"]["Tables"]["metric_definitions"]["Row"];
+export type MetricRow = Database["public"]["Tables"]["metrics"]["Row"];
 export type BloodPressureRow = Database["public"]["Tables"]["blood_pressure"]["Row"];
 export type BodyCompositionRow = Database["public"]["Tables"]["body_composition"]["Row"];
 export type DailyEntryRow = Database["public"]["Tables"]["daily_entries"]["Row"];

@@ -52,17 +52,18 @@ Web Dashboard (read-only visualization)
 ### Pullups
 - date, total_count, sets (array of reps per set)
 
-### Supplements
-- date, supplements taken (array)
+### Unified Metrics (metric_definitions + metrics)
+- **metric_definitions**: name (PK), display_name, type (numeric/tag), unit, category
+- **metrics**: id (UUID), date, metric_name (FK), numeric_value, text_value, unit, category, notes
+- Categories: `supplement` (tag), `sleep_tag` (tag), `custom` (numeric)
+- Supplements and sleep tags are tag-type metrics (no numeric_value)
+- Custom metrics are numeric-type (coffee cups, water intake, mood, etc.)
+- Multiple numeric entries per day per metric; tags deduplicated per day+category
+- metric_name lowercased at app layer; definitions auto-created on first log
 
 ### Body Composition
 - date, body_fat_pct, muscle_mass_lbs, bone_mass_lbs, body_water_pct, visceral_fat, bmr, notes
 - Source: Hume Body Pod (via Apple Health sync or manual entry)
-
-### Custom Metrics
-- id (UUID), date, metric_name, value, unit, notes
-- EAV-style table for ad-hoc numeric metrics (coffee cups, water intake, mood, etc.)
-- Multiple entries per day per metric; metric_name lowercased at app layer
 
 ## CLI Commands
 
@@ -87,6 +88,10 @@ ironcompass log pullups --total 18 --sets 3,3,3,3,3,3
 
 # Supplements
 ironcompass log supplements --taken "vitamin-d,magnesium,omega-3,creatine"
+ironcompass log supplements --taken "vitamin-d,omega-3" --mode replace  # replace all for that date
+
+# Sleep tags
+ironcompass log sleep-tags --tags "melatonin,mouth-tape,meditation"
 
 # Body composition
 ironcompass log bodycomp --fat 22.3 --muscle 145 --bone 7.2 --water 55.1 --visceral 8 --bmr 1680
@@ -122,10 +127,12 @@ The MCP server exposes these as tools Claude can call directly:
 - `ironcompass_log_meal` — log a meal with macros
 - `ironcompass_log_pullups` — log pullup count
 - `ironcompass_log_bp` — log blood pressure
-- `ironcompass_log_supplements` — log supplements taken
+- `ironcompass_log_supplements` — log supplements taken (merge or replace mode)
+- `ironcompass_log_sleep_tags` — log sleep tags (e.g., melatonin, meditation)
 - `ironcompass_log_bodycomp` — log body composition (Hume Body Pod)
 - `ironcompass_log_metric` — log a custom numeric metric
 - `ironcompass_list_workout_types` — list all valid workout types with display names and colors
+- `ironcompass_delete_supplement` — delete a single supplement by name and date
 - `ironcompass_delete_metric` — delete a custom metric entry by ID
 - `ironcompass_delete_meal` — delete a meal by ID
 - `ironcompass_delete_workout` — delete a workout by ID

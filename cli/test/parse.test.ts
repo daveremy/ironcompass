@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { parseJsonObject, parseTimestamp, mergeSupplements } from "../dist/lib/parse.js";
+import { parseJsonObject, parseTimestamp } from "../dist/lib/parse.js";
 
 describe("parseJsonObject", () => {
   it("parses a valid JSON object", () => {
@@ -69,24 +69,3 @@ describe("parseTimestamp", () => {
   });
 });
 
-describe("mergeSupplements", () => {
-  it("merges two disjoint lists", () => {
-    const result = mergeSupplements(["omega-3", "vitamin-d"], ["creatine", "magnesium"]);
-    assert.deepEqual(result, ["omega-3", "vitamin-d", "creatine", "magnesium"]);
-  });
-
-  it("deduplicates overlapping supplements", () => {
-    const result = mergeSupplements(["omega-3", "vitamin-d"], ["vitamin-d", "creatine"]);
-    assert.deepEqual(result, ["omega-3", "vitamin-d", "creatine"]);
-  });
-
-  it("handles empty existing list", () => {
-    const result = mergeSupplements([], ["omega-3", "creatine"]);
-    assert.deepEqual(result, ["omega-3", "creatine"]);
-  });
-
-  it("handles empty incoming list", () => {
-    const result = mergeSupplements(["omega-3", "creatine"], []);
-    assert.deepEqual(result, ["omega-3", "creatine"]);
-  });
-});

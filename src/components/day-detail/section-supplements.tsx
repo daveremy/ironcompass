@@ -1,14 +1,14 @@
-import type { SupplementsRow } from "@/lib/types";
+import type { MetricRow } from "@/lib/types";
 import SectionCard from "./section-card";
 import Badge from "./badge";
 
-export default function SectionSupplements({ data }: { data: SupplementsRow | null }) {
+export default function SectionSupplements({ data }: { data: MetricRow[] }) {
   return (
-    <SectionCard title="Supplements" accent="#a855f7" empty={!data}>
-      {data && (
+    <SectionCard title="Supplements" accent="#a855f7" empty={data.length === 0}>
+      {data.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
-          {data.supplements.map((s) => (
-            <Badge key={s} label={s.replace(/-/g, " ")} />
+          {data.map((r) => (
+            <Badge key={r.id} label={r.metric_name.replace(/-/g, " ")} />
           ))}
         </div>
       )}

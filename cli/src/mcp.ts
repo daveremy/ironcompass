@@ -3,7 +3,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { fetchDay, fetchWeek, computeTrend, computeStreak, fetchPersonalRecords, VALID_METRICS, VALID_STREAKS } from "./commands/query.js";
-import { logDaily, logSleep, logFasting, logBp, logWorkout, logMeal, logPullups, logSupplements, logBodycomp, logMetric } from "./commands/log.js";
+import { logDaily, logSleep, logFasting, logBp, logWorkout, logMeal, logPullups, logSupplements, logBodycomp, logMetric, logSleepTags, deleteSupplementByName } from "./commands/log.js";
 import { getWorkoutTypes } from "./lib/workout-types.js";
 import { deleteRowById } from "./db.js";
 import { todayDate } from "./lib/date.js";
@@ -17,6 +17,9 @@ function textResult(data: unknown) {
 }
 
 function logResult(date: string, data: unknown) {
+  if (Array.isArray(data)) {
+    return textResult({ rows: data, dashboard_url: dayUrl(date) });
+  }
   return textResult({ ...data as Record<string, unknown>, dashboard_url: dayUrl(date) });
 }
 
@@ -196,14 +199,15 @@ server.registerTool("ironcompass_log_pullups", {
 
 server.registerTool("ironcompass_log_supplements", {
   title: "Log Supplements",
-  description: "Log supplements taken",
+  description: "Log supplements taken. Mode: 'merge' (default) adds new supplements alongside existing, 'replace' removes all existing supplements for that date first.",
   inputSchema: z.object({
     date: optDate,
     supplements: z.array(z.string()).nonempty().describe("Supplements taken"),
+    mode: z.enum(["merge", "replace"]).optional().describe("merge (default) or replace"),
   }),
-}, async ({ date, supplements }) => {
+}, async ({ date, supplements, mode }) => {
   const d = date ?? todayDate();
-  return logResult(d, await logSupplements(d, supplements));
+  return logResult(d, await logSupplements(d, supplements, mode ?? "merge"));
 });
 
 server.registerTool("ironcompass_log_bodycomp", {
@@ -252,13 +256,13 @@ server.registerTool("ironcompass_list_workout_types", {
 // --- Delete tools ---
 
 server.registerTool("ironcompass_delete_metric", {
-  title: "Delete Custom Metric",
-  description: "Delete a custom metric entry by its ID",
+  title: "Delete Metric",
+  description: "Delete a metric entry (custom metric or supplement) by its ID",
   inputSchema: z.object({
-    id: z.string().uuid().describe("Custom metric UUID to delete"),
+    id: z.string().uuid().describe("Metric UUID to delete"),
   }),
 }, async ({ id }) => {
-  const deleted = await deleteRowById("custom_metrics", id);
+  const deleted = await deleteRowById("metrics", id);
   return textResult({ deleted, dashboard_url: dayUrl(deleted.date) });
 });
 
@@ -282,6 +286,31 @@ server.registerTool("ironcompass_delete_workout", {
 }, async ({ id }) => {
   const deleted = await deleteRowById("workouts", id);
   return textResult({ deleted, dashboard_url: dayUrl(deleted.date) });
+});
+
+server.registerTool("ironcompass_log_sleep_tags", {
+  title: "Log Sleep Tags",
+  description: "Log flexible sleep tags (e.g. nap, meditation, melatonin). Deduplicates per day.",
+  inputSchema: z.object({
+    date: optDate,
+    tags: z.array(z.string()).nonempty().describe("Sleep tags to log"),
+  }),
+}, async ({ date, tags }) => {
+  const d = date ?? todayDate();
+  return logResult(d, await logSleepTags(d, tags));
+});
+
+server.registerTool("ironcompass_delete_supplement", {
+  title: "Delete Supplement",
+  description: "Delete a specific supplement entry by name and date",
+  inputSchema: z.object({
+    date: optDate,
+    name: z.string().describe("Supplement name to delete"),
+  }),
+}, async ({ date, name }) => {
+  const d = date ?? todayDate();
+  const deleted = await deleteSupplementByName(d, name);
+  return textResult({ deleted, dashboard_url: dayUrl(d) });
 });
 
 // --- Plan tools ---
