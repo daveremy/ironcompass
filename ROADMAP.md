@@ -105,7 +105,7 @@ Source integrations (Apple Health, Oura, Hevy) live in LifeOS, which reconciles 
 | #68 | Add sickness/illness tracking | todo |
 | #77 | Supplements: add replace mode and delete capability | **done** |
 | #78 | Replace hardcoded sleep booleans with flexible sleep tags | **done** |
-| #79 | Expand Vitals section with more daily metrics | todo |
+| #79 | Expand Vitals section with more daily metrics | **done** |
 
 ## Testing
 
