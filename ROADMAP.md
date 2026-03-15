@@ -59,7 +59,7 @@ Source integrations (Apple Health, Oura, Hevy) live in LifeOS, which reconciles 
 
 | Issue | Task | Status |
 |---|---|---|
-| #76 | Strava integration: activity linking, route maps, and embed support | todo |
+| #76 | Strava integration: activity linking, route maps, and embed support | **done** |
 
 ---
 

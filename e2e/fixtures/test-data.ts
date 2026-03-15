@@ -75,8 +75,8 @@ export const MEALS = [
 
 export const PULLUPS = {
   date: TEST_DATE,
-  total_count: 18,
-  sets: [3, 3, 3, 3, 3, 3],
+  total_count: 9999,
+  sets: [1667, 1667, 1667, 1666, 1666, 1666],
 };
 
 export const SUPPLEMENTS = {
@@ -89,6 +89,8 @@ export const METRIC_DEFINITIONS = [
   { name: "magnesium", display_name: "Magnesium", type: "tag", category: "supplement" },
   { name: "omega-3", display_name: "Omega 3", type: "tag", category: "supplement" },
   { name: "creatine", display_name: "Creatine", type: "tag", category: "supplement" },
+  { name: "water", display_name: "Water", type: "numeric", unit: "ml", category: "custom" },
+  { name: "coffee", display_name: "Coffee", type: "numeric", unit: "cups", category: "custom" },
 ];
 
 export const METRIC_ROWS = [
@@ -96,6 +98,9 @@ export const METRIC_ROWS = [
   { date: TEST_DATE, metric_name: "magnesium", category: "supplement" },
   { date: TEST_DATE, metric_name: "omega-3", category: "supplement" },
   { date: TEST_DATE, metric_name: "creatine", category: "supplement" },
+  { date: TEST_DATE, metric_name: "water", numeric_value: 500, unit: "ml", category: "custom" },
+  { date: TEST_DATE, metric_name: "water", numeric_value: 750, unit: "ml", category: "custom" },
+  { date: TEST_DATE, metric_name: "coffee", numeric_value: 2, unit: "cups", category: "custom" },
 ];
 
 export const BODY_COMPOSITION = {

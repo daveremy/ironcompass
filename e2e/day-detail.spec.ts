@@ -41,7 +41,7 @@ test.describe("Day Detail View", () => {
     // Pullups
     const pullups = page.locator("[data-testid=section-pullups]");
     await expect(pullups).toBeVisible();
-    await expect(pullups).toContainText("18");
+    await expect(pullups).toContainText("9999");
 
     // Supplements
     const supplements = page.locator("[data-testid=section-supplements]");
@@ -53,7 +53,13 @@ test.describe("Day Detail View", () => {
     await expect(bodyComp).toContainText("18.5");
     await expect(bodyComp).toContainText("148");
 
-    // Custom Metrics — not seeded, so section is not rendered (returns null when empty)
+    // Promoted metrics (water, coffee) appear in Vitals, not Custom Metrics
+    await expect(vitals).toContainText("Water");
+    await expect(vitals).toContainText("1250");
+    await expect(vitals).toContainText("ml");
+    await expect(vitals).toContainText("Coffee");
+    await expect(vitals).toContainText("2");
+    await expect(vitals).toContainText("cups");
   });
 
   test("strength workout shows structured details, not raw JSON", async ({ page }) => {
