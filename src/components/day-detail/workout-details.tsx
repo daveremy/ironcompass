@@ -1,4 +1,7 @@
 import { toTitleCase } from "@/lib/format";
+import StravaActivity from "./strava-activity";
+
+const STRAVA_KEYS = ["strava_id", "summary_polyline", "embed_token"];
 
 function formatValue(value: unknown): string {
   if (Array.isArray(value)) {
@@ -116,13 +119,35 @@ function EnduranceDetails({ details }: { details: Record<string, unknown> }) {
 export default function WorkoutDetails({ type, details }: { type: string; details: Record<string, unknown> }) {
   if (Object.keys(details).length === 0) return null;
 
-  switch (type) {
-    case "strength":
-      return <StrengthDetails details={details} />;
-    case "hike":
-    case "run":
-      return <EnduranceDetails details={details} />;
-    default:
-      return <GenericDetails details={details} />;
+  // Extract Strava fields before passing to type-specific renderers
+  const stravaId = details.strava_id as string | number | undefined;
+  const summaryPolyline = details.summary_polyline as string | undefined;
+  const remaining = Object.fromEntries(
+    Object.entries(details).filter(([k]) => !STRAVA_KEYS.includes(k))
+  );
+
+  const hasStrava = stravaId != null || summaryPolyline != null;
+
+  const hasRemaining = Object.keys(remaining).length > 0;
+  let typeContent: React.ReactNode = null;
+  if (hasRemaining) {
+    switch (type) {
+      case "strength":
+        typeContent = <StrengthDetails details={remaining} />;
+        break;
+      case "hike":
+      case "run":
+        typeContent = <EnduranceDetails details={remaining} />;
+        break;
+      default:
+        typeContent = <GenericDetails details={remaining} />;
+    }
   }
+
+  return (
+    <div className="space-y-2">
+      {hasStrava && <StravaActivity strava_id={stravaId} summary_polyline={summaryPolyline} />}
+      {typeContent}
+    </div>
+  );
 }
