@@ -105,6 +105,13 @@ server.registerTool("ironcompass_log_sleep", {
     oura_readiness: z.number().optional().describe("Oura readiness score"),
     avg_hr_sleep: z.number().optional().describe("Average heart rate during sleep"),
     avg_hrv: z.number().optional().describe("Average HRV"),
+    oura_deep: z.number().optional().describe("Oura deep sleep sub-score (0-100)"),
+    oura_efficiency: z.number().optional().describe("Oura efficiency sub-score (0-100)"),
+    oura_latency: z.number().optional().describe("Oura latency sub-score (0-100)"),
+    oura_rem: z.number().optional().describe("Oura REM sub-score (0-100)"),
+    oura_restfulness: z.number().optional().describe("Oura restfulness sub-score (0-100)"),
+    oura_timing: z.number().optional().describe("Oura timing sub-score (0-100)"),
+    oura_total: z.number().optional().describe("Oura total sleep sub-score (0-100)"),
     notes: z.string().optional(),
   }),
 }, async ({ date, ...fields }) => {

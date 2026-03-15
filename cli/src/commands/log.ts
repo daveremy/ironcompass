@@ -12,7 +12,16 @@ export async function logDaily(date: string, fields: { weight?: number; energy?:
   return upsertRow("daily_entries", { date, ...sparse(fields) });
 }
 
-export async function logSleep(date: string, fields: { apple_score?: number; oura_score?: number; hours?: number; cpap?: boolean; mouth_tape?: boolean; oura_readiness?: number; avg_hr_sleep?: number; avg_hrv?: number; notes?: string }) {
+export type SleepFields = {
+  apple_score?: number; oura_score?: number; hours?: number;
+  cpap?: boolean; mouth_tape?: boolean;
+  oura_readiness?: number; avg_hr_sleep?: number; avg_hrv?: number;
+  oura_deep?: number; oura_efficiency?: number; oura_latency?: number;
+  oura_rem?: number; oura_restfulness?: number; oura_timing?: number; oura_total?: number;
+  notes?: string;
+};
+
+export async function logSleep(date: string, fields: SleepFields) {
   await ensureDailyEntry(date);
   return upsertRow("sleep", { date, ...sparse(fields) });
 }
@@ -181,6 +190,13 @@ export function registerLogCommands(program: Command): void {
     .option("--readiness <score>", "Oura readiness score")
     .option("--avg-hr-sleep <bpm>", "Average heart rate during sleep")
     .option("--hrv <ms>", "Average HRV")
+    .option("--oura-deep <score>", "Oura deep sleep score (0-100)")
+    .option("--oura-efficiency <score>", "Oura efficiency score (0-100)")
+    .option("--oura-latency <score>", "Oura latency score (0-100)")
+    .option("--oura-rem <score>", "Oura REM score (0-100)")
+    .option("--oura-restfulness <score>", "Oura restfulness score (0-100)")
+    .option("--oura-timing <score>", "Oura timing score (0-100)")
+    .option("--oura-total <score>", "Oura total sleep score (0-100)")
     .option("--notes <text>", "Notes")
     .action(async (opts) => {
       try {
@@ -193,6 +209,13 @@ export function registerLogCommands(program: Command): void {
           oura_readiness: parseNum("readiness", opts.readiness),
           avg_hr_sleep: parseNum("avg-hr-sleep", opts.avgHrSleep),
           avg_hrv: parseNum("hrv", opts.hrv),
+          oura_deep: parseNum("oura-deep", opts.ouraDeep),
+          oura_efficiency: parseNum("oura-efficiency", opts.ouraEfficiency),
+          oura_latency: parseNum("oura-latency", opts.ouraLatency),
+          oura_rem: parseNum("oura-rem", opts.ouraRem),
+          oura_restfulness: parseNum("oura-restfulness", opts.ouraRestfulness),
+          oura_timing: parseNum("oura-timing", opts.ouraTiming),
+          oura_total: parseNum("oura-total", opts.ouraTotal),
           notes: opts.notes as string | undefined,
         });
         success(result);
