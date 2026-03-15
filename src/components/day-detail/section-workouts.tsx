@@ -5,6 +5,8 @@ import { getWorkoutStatus, type WorkoutStatus } from "@/lib/workout-status";
 import { formatTime } from "@/lib/date";
 import SectionCard from "./section-card";
 import WorkoutTypeBadge from "@/components/ui/workout-type-badge";
+import Badge from "./badge";
+import { STRAVA_ORANGE } from "./strava-activity";
 import WorkoutDetails from "./workout-details";
 
 function StatusBadge({ status }: { status: WorkoutStatus }) {
@@ -48,9 +50,11 @@ function WorkoutCard({ workout, typeLookup, status }: { workout: WorkoutRow; typ
         </span>
         <StatusBadge status={status} />
         {workout.source && (
-          <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-mono text-slate-400 bg-slate-800/50 border border-slate-700/50">
-            {workout.source}
-          </span>
+          workout.source === "strava"
+            ? <Badge label="Strava" color={STRAVA_ORANGE} />
+            : <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-mono text-slate-400 bg-slate-800/50 border border-slate-700/50">
+                {workout.source}
+              </span>
         )}
         {stats.length > 0 && (
           <span className="text-xs font-mono text-muted">{stats.join(" / ")}</span>
