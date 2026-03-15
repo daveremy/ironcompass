@@ -43,10 +43,10 @@ test.describe("Weekly View", () => {
     await expect(sleep).toBeVisible();
     await expect(sleep).toContainText("7.5");
 
-    // Highlights card: pullups total (18)
+    // Highlights card: pullups total (9999)
     const highlights = page.locator("[data-testid=section-highlights]");
     await expect(highlights).toBeVisible();
-    await expect(highlights).toContainText("18");
+    await expect(highlights).toContainText("9999");
   });
 
   test("grid shows seeded values in the Thursday column", async ({ page }) => {

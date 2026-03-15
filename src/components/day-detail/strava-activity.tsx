@@ -1,15 +1,30 @@
 "use client";
 
 import { useId } from "react";
-import polyline from "@mapbox/polyline";
 
 export const STRAVA_ORANGE = "#FC4C02";
+
+/** Decode a Google-encoded polyline string into [lat, lng] pairs. */
+function decodePolyline(str: string): [number, number][] {
+  const coordinates: [number, number][] = [];
+  let index = 0, lat = 0, lng = 0;
+  while (index < str.length) {
+    let shift = 1, result = 0, byte: number;
+    do { byte = str.charCodeAt(index++) - 63; result += (byte & 0x1f) * shift; shift *= 32; } while (byte >= 0x20);
+    lat += (result & 1) ? ((-result - 1) / 2) : (result / 2);
+    shift = 1; result = 0;
+    do { byte = str.charCodeAt(index++) - 63; result += (byte & 0x1f) * shift; shift *= 32; } while (byte >= 0x20);
+    lng += (result & 1) ? ((-result - 1) / 2) : (result / 2);
+    coordinates.push([lat / 1e5, lng / 1e5]);
+  }
+  return coordinates;
+}
 
 function RouteSvg({ encoded }: { encoded: string }) {
   const filterId = useId();
   let points: [number, number][];
   try {
-    points = polyline.decode(encoded);
+    points = decodePolyline(encoded);
   } catch {
     return null;
   }

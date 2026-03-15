@@ -15,7 +15,13 @@ function fastDuration(start: string | null, end: string | null): string | null {
   return m > 0 ? `${h}h ${m}m` : `${h}h`;
 }
 
-export default function SectionFasting({ data }: { data: FastingRow | null }) {
+export default function SectionFasting({
+  data,
+  streakKeys,
+}: {
+  data: FastingRow | null;
+  streakKeys?: Set<string>;
+}) {
   const duration = data ? fastDuration(data.window_start, data.window_end) : null;
   return (
     <SectionCard title="Fasting" accent="#eab308" empty={!data}>
@@ -25,6 +31,9 @@ export default function SectionFasting({ data }: { data: FastingRow | null }) {
           <Stat
             label="Compliant"
             value={data.compliant != null ? (data.compliant ? "Yes" : "No") : null}
+            indicator={
+              streakKeys?.has("fasting") && data.compliant === true ? "streak" : undefined
+            }
           />
           {duration && <Stat label="Fast Duration" value={duration} />}
           <Stat label="Window Start" value={data.window_start} />

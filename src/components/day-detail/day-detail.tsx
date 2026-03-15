@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { formatDate } from "@/lib/date";
 import { fetchDayData, fetchStreak, fetchPersonalRecords, type DayData, type StreakResult, type PersonalRecord } from "@/lib/queries";
 import { getWorkoutTypes, buildTypeLookup, type WorkoutTypeLookup } from "@/lib/workout-types";
+import { PROMOTED_VITALS } from "@/lib/promoted-vitals";
 import DayHeader from "./day-header";
 import SectionVitals from "./section-vitals";
 import SectionSleep from "./section-sleep";
@@ -128,6 +129,19 @@ export default function DayDetail({ date, backMonth }: { date: string; backMonth
     return computePRBadges(data, records);
   }, [data, records]);
 
+  const prKeys = useMemo(() => new Set(prBadges.map((pr) => pr.key)), [prBadges]);
+  const streakKeys = useMemo(() => new Set(streaks.map((s) => s.metric)), [streaks]);
+
+  const { promotedMetrics, remainingCustomMetrics } = useMemo(() => {
+    if (!data) return { promotedMetrics: [], remainingCustomMetrics: [] };
+    const promoted: typeof data.customMetrics = [];
+    const remaining: typeof data.customMetrics = [];
+    for (const m of data.customMetrics) {
+      (Object.hasOwn(PROMOTED_VITALS, m.metric_name) ? promoted : remaining).push(m);
+    }
+    return { promotedMetrics: promoted, remainingCustomMetrics: remaining };
+  }, [data]);
+
   if (loading) return <LoadingSkeleton date={date} backMonth={backMonth} />;
 
   if (error) {
@@ -168,9 +182,15 @@ export default function DayDetail({ date, backMonth }: { date: string; backMonth
         </div>
       )}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <SectionVitals data={data!.daily} />
-        <SectionSleep data={data!.sleep} sleepTags={data!.sleepTags} />
-        <SectionFasting data={data!.fasting} />
+        <SectionVitals
+          data={data!.daily}
+          promotedMetrics={promotedMetrics}
+          bodyFatPct={data!.bodyComp?.body_fat_pct ?? null}
+          prKeys={prKeys}
+          streakKeys={streakKeys}
+        />
+        <SectionSleep data={data!.sleep} sleepTags={data!.sleepTags} prKeys={prKeys} />
+        <SectionFasting data={data!.fasting} streakKeys={streakKeys} />
         <SectionBP data={data!.bloodPressure} />
         <div className="col-span-full">
           <SectionWorkouts data={data!.workouts} typeLookup={typeLookup} today={today} />
@@ -178,13 +198,13 @@ export default function DayDetail({ date, backMonth }: { date: string; backMonth
         <div className="col-span-full">
           <SectionMeals data={data!.meals} />
         </div>
-        <SectionPullups data={data!.pullups} />
+        <SectionPullups data={data!.pullups} prKeys={prKeys} />
         <SectionSupplements data={data!.supplements} />
         <div className="col-span-full">
-          <SectionBodyComp data={data!.bodyComp} weight={data!.daily?.weight} />
+          <SectionBodyComp data={data!.bodyComp} weight={data!.daily?.weight} prKeys={prKeys} />
         </div>
         <div className="col-span-full">
-          <SectionCustomMetrics data={data!.customMetrics} />
+          <SectionCustomMetrics data={remainingCustomMetrics} />
         </div>
       </div>
     </div>
