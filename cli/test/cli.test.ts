@@ -216,6 +216,61 @@ describe("ironcompass CLI", () => {
     assert.ok(stdout.includes("--tags"), "missing --tags option");
   });
 
+  // --- meal type and items ---
+  it("meal --help shows --type and --items options", () => {
+    const { stdout } = run("log", "meal", "--help");
+    assert.ok(stdout.includes("--type"), "missing --type option");
+    assert.ok(stdout.includes("--items"), "missing --items option");
+  });
+
+  it("meal --type with invalid type fails", () => {
+    const { stderr, exitCode } = run("log", "meal", "--name", "test", "--type", "brunch");
+    assert.equal(exitCode, 1);
+    const parsed = JSON.parse(stderr);
+    assert.equal(parsed.ok, false);
+    assert.ok(parsed.error.includes('Invalid meal type "brunch"'));
+    assert.ok(parsed.error.includes("breakfast"));
+  });
+
+  it("meal --items with invalid JSON fails", () => {
+    const { stderr, exitCode } = run("log", "meal", "--name", "test", "--items", "not-json");
+    assert.equal(exitCode, 1);
+    const parsed = JSON.parse(stderr);
+    assert.equal(parsed.ok, false);
+  });
+
+  it("meal --items with non-array JSON fails", () => {
+    const { stderr, exitCode } = run("log", "meal", "--name", "test", "--items", '{"name":"egg"}');
+    assert.equal(exitCode, 1);
+    const parsed = JSON.parse(stderr);
+    assert.equal(parsed.ok, false);
+    assert.ok(parsed.error.includes("JSON array"));
+  });
+
+  it("meal --items with missing item name fails", () => {
+    const { stderr, exitCode } = run("log", "meal", "--name", "test", "--items", '[{"protein_g":10}]');
+    assert.equal(exitCode, 1);
+    const parsed = JSON.parse(stderr);
+    assert.equal(parsed.ok, false);
+    assert.ok(parsed.error.includes("name"));
+  });
+
+  it("meal --items rejects non-numeric macro values", () => {
+    const { stderr, exitCode } = run("log", "meal", "--name", "test", "--items", '[{"name":"egg","protein_g":"abc"}]');
+    assert.equal(exitCode, 1);
+    const parsed = JSON.parse(stderr);
+    assert.equal(parsed.ok, false);
+    assert.ok(parsed.error.includes("finite number"));
+  });
+
+  it("meal --items rejects Infinity macro values", () => {
+    const { stderr, exitCode } = run("log", "meal", "--name", "test", "--items", '[{"name":"egg","calories":"Infinity"}]');
+    assert.equal(exitCode, 1);
+    const parsed = JSON.parse(stderr);
+    assert.equal(parsed.ok, false);
+    assert.ok(parsed.error.includes("finite number"));
+  });
+
   // empty supplements rejected
   it("log supplements --taken ',' fails with empty list error", () => {
     const { stderr, exitCode } = run("log", "supplements", "--taken", ",");

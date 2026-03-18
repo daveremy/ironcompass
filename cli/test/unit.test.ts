@@ -4,6 +4,8 @@ import { parseNum, parseList, sparse } from "../src/lib/parse.ts";
 import { todayDate, daysAgo, parseDate, daysBeforeDate } from "../src/lib/date.ts";
 import { throwIfError } from "../src/db.ts";
 import { scanStreaks, computeMaxRecord, computeMinRecord, computeDailySumMax } from "../src/lib/streak-helpers.ts";
+import { sumItems, parseMealItems, MEAL_TYPES } from "../src/lib/meal-helpers.ts";
+import type { MealItem } from "../src/lib/meal-helpers.ts";
 import type { WorkoutStatus } from "../src/commands/plan.ts";
 
 describe("parseNum", () => {
@@ -385,5 +387,132 @@ describe("getWorkoutStatus", () => {
 
   it("planned=false, completed=null => completed", () => {
     assert.equal(getWorkoutStatus({ planned: false, completed: null, date: "2026-03-12" }, today), "completed");
+  });
+});
+
+// --- Meal helpers ---
+
+describe("MEAL_TYPES", () => {
+  it("contains exactly breakfast, lunch, dinner, snack", () => {
+    assert.deepEqual([...MEAL_TYPES], ["breakfast", "lunch", "dinner", "snack"]);
+  });
+});
+
+describe("sumItems", () => {
+  it("sums all macro fields from items", () => {
+    const items: MealItem[] = [
+      { name: "turkey", protein_g: 40, fat_g: 10, carbs_g: 0, calories: 250 },
+      { name: "tortillas", protein_g: 4, fat_g: 3, carbs_g: 30, calories: 160 },
+      { name: "cheese", protein_g: 7, fat_g: 9, carbs_g: 1, calories: 110 },
+    ];
+    const result = sumItems(items);
+    assert.equal(result.protein_g, 51);
+    assert.equal(result.fat_g, 22);
+    assert.equal(result.carbs_g, 31);
+    assert.equal(result.calories, 520);
+  });
+
+  it("returns undefined for fields where no item has a value", () => {
+    const items: MealItem[] = [
+      { name: "mystery food" },
+      { name: "unknown snack" },
+    ];
+    const result = sumItems(items);
+    assert.equal(result.protein_g, undefined);
+    assert.equal(result.fat_g, undefined);
+    assert.equal(result.carbs_g, undefined);
+    assert.equal(result.calories, undefined);
+  });
+
+  it("skips null values in partial items", () => {
+    const items: MealItem[] = [
+      { name: "chicken", protein_g: 30, calories: 200 },
+      { name: "rice", carbs_g: 45, calories: 180 },
+    ];
+    const result = sumItems(items);
+    assert.equal(result.protein_g, 30);
+    assert.equal(result.fat_g, undefined);
+    assert.equal(result.carbs_g, 45);
+    assert.equal(result.calories, 380);
+  });
+
+  it("handles empty items array", () => {
+    const result = sumItems([]);
+    assert.equal(result.protein_g, undefined);
+    assert.equal(result.fat_g, undefined);
+    assert.equal(result.carbs_g, undefined);
+    assert.equal(result.calories, undefined);
+  });
+
+  it("handles items with zero values", () => {
+    const items: MealItem[] = [
+      { name: "water", protein_g: 0, fat_g: 0, carbs_g: 0, calories: 0 },
+    ];
+    const result = sumItems(items);
+    assert.equal(result.protein_g, 0);
+    assert.equal(result.fat_g, 0);
+    assert.equal(result.carbs_g, 0);
+    assert.equal(result.calories, 0);
+  });
+});
+
+describe("parseMealItems", () => {
+  it("parses valid items with all macros", () => {
+    const json = '[{"name":"egg","protein_g":6,"fat_g":5,"carbs_g":0,"calories":70}]';
+    const items = parseMealItems(json);
+    assert.equal(items.length, 1);
+    assert.equal(items[0].name, "egg");
+    assert.equal(items[0].protein_g, 6);
+    assert.equal(items[0].calories, 70);
+  });
+
+  it("parses items with partial macros", () => {
+    const json = '[{"name":"bread","carbs_g":25}]';
+    const items = parseMealItems(json);
+    assert.equal(items.length, 1);
+    assert.equal(items[0].carbs_g, 25);
+    assert.equal(items[0].protein_g, undefined);
+  });
+
+  it("treats empty string macros as undefined", () => {
+    const json = '[{"name":"egg","protein_g":""}]';
+    const items = parseMealItems(json);
+    assert.equal(items[0].protein_g, undefined);
+  });
+
+  it("treats null macros as undefined", () => {
+    const json = '[{"name":"egg","protein_g":null}]';
+    const items = parseMealItems(json);
+    assert.equal(items[0].protein_g, undefined);
+  });
+
+  it("coerces string numbers to numbers", () => {
+    const json = '[{"name":"egg","protein_g":"6.5"}]';
+    const items = parseMealItems(json);
+    assert.equal(items[0].protein_g, 6.5);
+  });
+
+  it("throws on non-array JSON", () => {
+    assert.throws(() => parseMealItems('{"name":"egg"}'), /JSON array/);
+  });
+
+  it("throws on missing item name", () => {
+    assert.throws(() => parseMealItems('[{"protein_g":10}]'), /missing "name"/);
+  });
+
+  it("throws on non-numeric macro", () => {
+    assert.throws(() => parseMealItems('[{"name":"egg","protein_g":"abc"}]'), /finite number/);
+  });
+
+  it("throws on Infinity", () => {
+    assert.throws(() => parseMealItems('[{"name":"egg","calories":"Infinity"}]'), /finite number/);
+  });
+
+  it("parses multiple items", () => {
+    const json = '[{"name":"a","protein_g":10},{"name":"b","protein_g":20}]';
+    const items = parseMealItems(json);
+    assert.equal(items.length, 2);
+    assert.equal(items[0].protein_g, 10);
+    assert.equal(items[1].protein_g, 20);
   });
 });

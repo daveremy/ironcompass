@@ -298,10 +298,12 @@ export type Database = {
           description: string | null
           fat_g: number | null
           id: string
+          items: Json | null
           name: string | null
           notes: string | null
           protein_g: number | null
           time: string | null
+          type: string | null
           updated_at: string | null
         }
         Insert: {
@@ -312,10 +314,12 @@ export type Database = {
           description?: string | null
           fat_g?: number | null
           id?: string
+          items?: Json | null
           name?: string | null
           notes?: string | null
           protein_g?: number | null
           time?: string | null
+          type?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -326,10 +330,12 @@ export type Database = {
           description?: string | null
           fat_g?: number | null
           id?: string
+          items?: Json | null
           name?: string | null
           notes?: string | null
           protein_g?: number | null
           time?: string | null
+          type?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -385,8 +391,15 @@ export type Database = {
           hours: number | null
           mouth_tape: boolean | null
           notes: string | null
+          oura_deep: number | null
+          oura_efficiency: number | null
+          oura_latency: number | null
           oura_readiness: number | null
+          oura_rem: number | null
+          oura_restfulness: number | null
           oura_score: number | null
+          oura_timing: number | null
+          oura_total: number | null
           updated_at: string | null
         }
         Insert: {
@@ -399,8 +412,15 @@ export type Database = {
           hours?: number | null
           mouth_tape?: boolean | null
           notes?: string | null
+          oura_deep?: number | null
+          oura_efficiency?: number | null
+          oura_latency?: number | null
           oura_readiness?: number | null
+          oura_rem?: number | null
+          oura_restfulness?: number | null
           oura_score?: number | null
+          oura_timing?: number | null
+          oura_total?: number | null
           updated_at?: string | null
         }
         Update: {
@@ -413,8 +433,15 @@ export type Database = {
           hours?: number | null
           mouth_tape?: boolean | null
           notes?: string | null
+          oura_deep?: number | null
+          oura_efficiency?: number | null
+          oura_latency?: number | null
           oura_readiness?: number | null
+          oura_rem?: number | null
+          oura_restfulness?: number | null
           oura_score?: number | null
+          oura_timing?: number | null
+          oura_total?: number | null
           updated_at?: string | null
         }
         Relationships: [

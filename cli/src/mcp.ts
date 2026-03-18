@@ -3,7 +3,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { fetchDay, fetchWeek, computeTrend, computeStreak, fetchPersonalRecords, VALID_METRICS, VALID_STREAKS } from "./commands/query.js";
-import { logDaily, logSleep, logFasting, logBp, logWorkout, logMeal, logPullups, logSupplements, logBodycomp, logMetric, logSleepTags, deleteSupplementByName } from "./commands/log.js";
+import { logDaily, logSleep, logFasting, logBp, logWorkout, logMeal, logPullups, logSupplements, logBodycomp, logMetric, logSleepTags, deleteSupplementByName, MEAL_TYPES } from "./commands/log.js";
 import { getWorkoutTypes } from "./lib/workout-types.js";
 import { deleteRowById } from "./db.js";
 import { todayDate } from "./lib/date.js";
@@ -105,6 +105,13 @@ server.registerTool("ironcompass_log_sleep", {
     oura_readiness: z.number().optional().describe("Oura readiness score"),
     avg_hr_sleep: z.number().optional().describe("Average heart rate during sleep"),
     avg_hrv: z.number().optional().describe("Average HRV"),
+    oura_deep: z.number().optional().describe("Oura deep sleep sub-score (0-100)"),
+    oura_efficiency: z.number().optional().describe("Oura efficiency sub-score (0-100)"),
+    oura_latency: z.number().optional().describe("Oura latency sub-score (0-100)"),
+    oura_rem: z.number().optional().describe("Oura REM sub-score (0-100)"),
+    oura_restfulness: z.number().optional().describe("Oura restfulness sub-score (0-100)"),
+    oura_timing: z.number().optional().describe("Oura timing sub-score (0-100)"),
+    oura_total: z.number().optional().describe("Oura total sleep sub-score (0-100)"),
     notes: z.string().optional(),
   }),
 }, async ({ date, ...fields }) => {
@@ -178,6 +185,15 @@ server.registerTool("ironcompass_log_meal", {
     carbs_g: z.number().optional().describe("Carbs grams"),
     calories: z.number().optional().describe("Calories"),
     notes: z.string().optional(),
+    type: z.enum(MEAL_TYPES).optional()
+      .describe("Meal type"),
+    items: z.array(z.object({
+      name: z.string().describe("Food item name"),
+      protein_g: z.number().optional().describe("Protein grams"),
+      fat_g: z.number().optional().describe("Fat grams"),
+      carbs_g: z.number().optional().describe("Carbs grams"),
+      calories: z.number().optional().describe("Calories"),
+    })).optional().describe("Individual food items — macros auto-summed to meal level when meal-level macros omitted"),
   }),
 }, async ({ date, name, ...fields }) => {
   const d = date ?? todayDate();
