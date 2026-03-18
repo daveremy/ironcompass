@@ -298,10 +298,12 @@ export type Database = {
           description: string | null
           fat_g: number | null
           id: string
+          items: Json | null
           name: string | null
           notes: string | null
           protein_g: number | null
           time: string | null
+          type: string | null
           updated_at: string | null
         }
         Insert: {
@@ -312,10 +314,12 @@ export type Database = {
           description?: string | null
           fat_g?: number | null
           id?: string
+          items?: Json | null
           name?: string | null
           notes?: string | null
           protein_g?: number | null
           time?: string | null
+          type?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -326,10 +330,12 @@ export type Database = {
           description?: string | null
           fat_g?: number | null
           id?: string
+          items?: Json | null
           name?: string | null
           notes?: string | null
           protein_g?: number | null
           time?: string | null
+          type?: string | null
           updated_at?: string | null
         }
         Relationships: [

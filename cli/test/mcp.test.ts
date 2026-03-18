@@ -144,6 +144,20 @@ describe("ironcompass MCP server", () => {
       // streak schema has as_of_date property (#69)
       const streak = tools.find((t: any) => t.name === "ironcompass_query_streak");
       assert.ok(streak.inputSchema.properties.as_of_date, "streak should have as_of_date property");
+
+      // meal schema has type and items properties (#86)
+      const meal = tools.find((t: any) => t.name === "ironcompass_log_meal");
+      assert.ok(meal.inputSchema.properties.type, "meal should have type property");
+      const mealType = meal.inputSchema.properties.type;
+      assert.deepEqual(mealType.enum, ["breakfast", "lunch", "dinner", "snack"], "meal type should be an enum");
+      assert.ok(meal.inputSchema.properties.items, "meal should have items property");
+      assert.equal(meal.inputSchema.properties.items.type, "array", "items should be an array");
+      const itemProps = meal.inputSchema.properties.items.items.properties;
+      assert.ok(itemProps.name, "item should have name");
+      assert.ok(itemProps.protein_g, "item should have protein_g");
+      assert.ok(itemProps.fat_g, "item should have fat_g");
+      assert.ok(itemProps.carbs_g, "item should have carbs_g");
+      assert.ok(itemProps.calories, "item should have calories");
     } finally {
       proc.kill();
     }

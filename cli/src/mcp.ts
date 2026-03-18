@@ -3,7 +3,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { fetchDay, fetchWeek, computeTrend, computeStreak, fetchPersonalRecords, VALID_METRICS, VALID_STREAKS } from "./commands/query.js";
-import { logDaily, logSleep, logFasting, logBp, logWorkout, logMeal, logPullups, logSupplements, logBodycomp, logMetric, logSleepTags, deleteSupplementByName } from "./commands/log.js";
+import { logDaily, logSleep, logFasting, logBp, logWorkout, logMeal, logPullups, logSupplements, logBodycomp, logMetric, logSleepTags, deleteSupplementByName, MEAL_TYPES } from "./commands/log.js";
 import { getWorkoutTypes } from "./lib/workout-types.js";
 import { deleteRowById } from "./db.js";
 import { todayDate } from "./lib/date.js";
@@ -185,6 +185,15 @@ server.registerTool("ironcompass_log_meal", {
     carbs_g: z.number().optional().describe("Carbs grams"),
     calories: z.number().optional().describe("Calories"),
     notes: z.string().optional(),
+    type: z.enum(MEAL_TYPES).optional()
+      .describe("Meal type"),
+    items: z.array(z.object({
+      name: z.string().describe("Food item name"),
+      protein_g: z.number().optional().describe("Protein grams"),
+      fat_g: z.number().optional().describe("Fat grams"),
+      carbs_g: z.number().optional().describe("Carbs grams"),
+      calories: z.number().optional().describe("Calories"),
+    })).optional().describe("Individual food items — macros auto-summed to meal level when meal-level macros omitted"),
   }),
 }, async ({ date, name, ...fields }) => {
   const d = date ?? todayDate();

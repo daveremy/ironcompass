@@ -33,10 +33,10 @@ test.describe("Weekly View", () => {
     await expect(workouts).toBeVisible();
     await expect(workouts).toContainText("2");
 
-    // Nutrition card: avg protein from seeded meals (40 + 35 = 75g)
+    // Nutrition card: avg protein from seeded meals (40 + 51 + 35 = 126g)
     const nutrition = page.locator("[data-testid=section-nutrition]");
     await expect(nutrition).toBeVisible();
-    await expect(nutrition).toContainText("75");
+    await expect(nutrition).toContainText("126");
 
     // Sleep card: avg hours from seeded sleep (7.5h)
     const sleep = page.locator("[data-testid=section-sleep]");

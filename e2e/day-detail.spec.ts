@@ -80,15 +80,46 @@ test.describe("Day Detail View", () => {
     await expect(page.locator("[data-testid=badge-hike]")).toBeVisible();
   });
 
-  test("meals table shows both meals with macros", async ({ page }) => {
+  test("meals table shows all meals with macros", async ({ page }) => {
     await page.goto(`/?view=daily&date=${TEST_DATE}`);
     await page.waitForSelector("[data-testid=day-detail]");
 
     const meals = page.locator("[data-testid=section-meals]");
     await expect(meals).toContainText("Protein shake");
+    await expect(meals).toContainText("Turkey tacos");
     await expect(meals).toContainText("Salmon dinner");
     await expect(meals).toContainText("245");
+    await expect(meals).toContainText("520");
     await expect(meals).toContainText("395");
+  });
+
+  test("meal type badges render for typed meals", async ({ page }) => {
+    await page.goto(`/?view=daily&date=${TEST_DATE}`);
+    await page.waitForSelector("[data-testid=day-detail]");
+
+    const meals = page.locator("[data-testid=section-meals]");
+    await expect(meals).toContainText("breakfast");
+    await expect(meals).toContainText("dinner");
+  });
+
+  test("meal items expand on click", async ({ page }) => {
+    await page.goto(`/?view=daily&date=${TEST_DATE}`);
+    await page.waitForSelector("[data-testid=day-detail]");
+
+    const meals = page.locator("[data-testid=section-meals]");
+    const tacoRow = meals.locator("tr", { hasText: "Turkey tacos" });
+    await expect(tacoRow).toBeVisible();
+    await expect(tacoRow).toContainText("3");
+
+    await tacoRow.click();
+
+    await expect(meals).toContainText("ground turkey");
+    await expect(meals).toContainText("tortillas");
+    await expect(meals).toContainText("cheese");
+
+    await tacoRow.click();
+
+    await expect(meals.locator("text=ground turkey")).not.toBeVisible();
   });
 
   test("PR badges render on day with record values", async ({ page }) => {

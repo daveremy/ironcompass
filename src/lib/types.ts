@@ -101,10 +101,12 @@ export type Database = {
           description: string | null
           fat_g: number | null
           id: string
+          items: Json | null
           name: string | null
           notes: string | null
           protein_g: number | null
           time: string | null
+          type: string | null
           updated_at: string | null
         }
       }
@@ -273,3 +275,14 @@ export type PullupsRow = Database["public"]["Tables"]["pullups"]["Row"];
 export type SleepRow = Database["public"]["Tables"]["sleep"]["Row"];
 export type SupplementsRow = Database["public"]["Tables"]["supplements"]["Row"];
 export type WorkoutRow = Database["public"]["Tables"]["workouts"]["Row"]
+
+export interface MealItem {
+  name: string;
+  protein_g?: number | null;
+  fat_g?: number | null;
+  carbs_g?: number | null;
+  calories?: number | null;
+}
+
+export const MEAL_TYPES = ["breakfast", "lunch", "dinner", "snack"] as const;
+export type MealType = (typeof MEAL_TYPES)[number];

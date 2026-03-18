@@ -5,6 +5,8 @@ import { ensureDailyEntry } from "../lib/ensure-daily-entry.js";
 import { parseNum, parseList, parseJsonObject, parseTimestamp, sparse } from "../lib/parse.js";
 import { todayDate } from "../lib/date.js";
 import { validateWorkoutType } from "../lib/workout-types.js";
+import { MEAL_TYPES, sumItems, parseMealItems } from "../lib/meal-helpers.js";
+import type { MealItem } from "../lib/meal-helpers.js";
 
 // --- Extracted core functions (used by both CLI and MCP) ---
 
@@ -50,9 +52,28 @@ export async function logWorkout(date: string, type: string, fields: { duration_
   return insertRow("workouts", { date, type, ...sparse(normalized) });
 }
 
-export async function logMeal(date: string, name: string, fields: { time?: string; description?: string; protein_g?: number; fat_g?: number; carbs_g?: number; calories?: number; notes?: string } = {}) {
+export { MEAL_TYPES } from "../lib/meal-helpers.js";
+export type { MealItem } from "../lib/meal-helpers.js";
+
+export async function logMeal(date: string, name: string, fields: { time?: string; description?: string; protein_g?: number; fat_g?: number; carbs_g?: number; calories?: number; notes?: string; type?: string; items?: MealItem[] } = {}) {
+  if (fields.type && !(MEAL_TYPES as readonly string[]).includes(fields.type)) {
+    throw new Error(`Invalid meal type "${fields.type}". Must be one of: ${MEAL_TYPES.join(", ")}`);
+  }
+
+  let { protein_g, fat_g, carbs_g, calories, items, ...rest } = fields;
+  if (items && items.length > 0) {
+    const itemSums = sumItems(items);
+    if (protein_g == null) protein_g = itemSums.protein_g;
+    if (fat_g == null) fat_g = itemSums.fat_g;
+    if (carbs_g == null) carbs_g = itemSums.carbs_g;
+    if (calories == null) calories = itemSums.calories;
+  }
+
   await ensureDailyEntry(date);
-  return insertRow("meals", { date, name, ...sparse(fields) });
+  return insertRow("meals", {
+    date, name,
+    ...sparse({ ...rest, protein_g, fat_g, carbs_g, calories, items }),
+  });
 }
 
 export async function logPullups(date: string, total_count: number, fields: { sets?: number[] } = {}) {
@@ -314,6 +335,8 @@ export function registerLogCommands(program: Command): void {
     .option("--carbs <g>", "Carbs grams")
     .option("--calories <cal>", "Calories")
     .option("--notes <text>", "Notes")
+    .option("--type <type>", "Meal type (breakfast, lunch, dinner, snack)")
+    .option("--items <json>", "Food items as JSON array")
     .action(async (opts) => {
       try {
         const result = await logMeal(opts.date as string, opts.name as string, {
@@ -324,6 +347,8 @@ export function registerLogCommands(program: Command): void {
           carbs_g: parseNum("carbs", opts.carbs),
           calories: parseNum("calories", opts.calories),
           notes: opts.notes as string | undefined,
+          type: opts.type as string | undefined,
+          items: opts.items !== undefined ? parseMealItems(opts.items as string) : undefined,
         });
         success(result);
       } catch (e: any) { fail(e.message ?? String(e)); }

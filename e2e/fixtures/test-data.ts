@@ -58,10 +58,25 @@ export const MEALS = [
   {
     date: TEST_DATE,
     name: "Protein shake",
+    type: "breakfast",
     protein_g: 40,
     fat_g: 5,
     carbs_g: 10,
     calories: 245,
+  },
+  {
+    date: TEST_DATE,
+    name: "Turkey tacos",
+    type: "dinner",
+    protein_g: 51,
+    fat_g: 22,
+    carbs_g: 31,
+    calories: 520,
+    items: [
+      { name: "ground turkey", protein_g: 40, fat_g: 10, carbs_g: 0, calories: 250 },
+      { name: "tortillas", protein_g: 4, fat_g: 3, carbs_g: 30, calories: 160 },
+      { name: "cheese", protein_g: 7, fat_g: 9, carbs_g: 1, calories: 110 },
+    ],
   },
   {
     date: TEST_DATE,

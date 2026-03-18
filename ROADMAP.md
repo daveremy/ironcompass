@@ -120,3 +120,6 @@ Source integrations (Apple Health, Oura, Hevy) live in LifeOS, which reconciles 
 - AI-generated weekly health insights
 - Supplement timing optimizer
 - Training load / recovery scoring
+- Shared types package between CLI and web (MealItem, MEAL_TYPES, etc. currently duplicated) — surfaced by codex/gemini during #86 review
+- Case-insensitive meal type validation in CLI (accept "Breakfast" → "breakfast") — surfaced by gemini during #86 review
+- Validate JSONB columns (meal items, workout details) at API boundary instead of component level — surfaced by code quality review during #86
