@@ -381,7 +381,7 @@ export function registerLogCommands(program: Command): void {
     .action(async (opts) => {
       try {
         const supplements = parseList(opts.taken as string);
-        if (supplements.length === 0) fail("--taken requires at least one supplement");
+        if (supplements.length === 0) return fail("--taken requires at least one supplement");
         const result = await logSupplements(opts.date as string, supplements);
         success(result);
       } catch (e: any) { fail(e.message ?? String(e)); }
@@ -423,7 +423,7 @@ export function registerLogCommands(program: Command): void {
     .action(async (opts) => {
       try {
         const tags = parseList(opts.tags as string);
-        if (tags.length === 0) fail("--tags requires at least one tag");
+        if (tags.length === 0) return fail("--tags requires at least one tag");
         const result = await logSleepTags(opts.date as string, tags);
         success(result);
       } catch (e: any) { fail(e.message ?? String(e)); }
