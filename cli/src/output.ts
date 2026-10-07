@@ -10,11 +10,12 @@ let finished = false;
 
 function finish(stream: NodeJS.WriteStream, body: unknown, code: number): void {
   if (finished) return;
+  const text = JSON.stringify(body) + "\n"; // may throw: do it before claiming the exit
   finished = true;
   process.exitCode = code;
   const exit = () => process.exit(code);
   stream.once("error", exit); // e.g. EPIPE when the reader has gone
-  stream.write(JSON.stringify(body) + "\n", exit);
+  stream.write(text, exit);
 }
 
 export function success(data: unknown): void {
