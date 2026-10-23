@@ -4,7 +4,7 @@ module.exports = {
       name: 'ironcompass',
       cwd: __dirname,
       script: 'npm',
-      args: 'start',
+      args: 'start -- -H 127.0.0.1', // localhost only: the hub has no host firewall (lifeos#2195)
       env: {
         NODE_ENV: 'production',
         PORT: 3000,
